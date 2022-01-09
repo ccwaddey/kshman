@@ -1,0 +1,92 @@
+SSYYNNOOPPSSIISS
+     kksshh [--++aabbCCeeffhhiikkllmmnnpprruuvvXXxx] [--++oo _o_p_t_i_o_n]
+         [--cc _s_t_r_i_n_g | --ss | _f_i_l_e [_a_r_g_u_m_e_n_t _._._.]]
+
+DDEESSCCRRIIPPTTIIOONN
+     kksshh is a command interpreter intended for both interactive and shell
+     script use.  Its command language is a superset of the sh(1) shell
+     language.
+
+     The options are as follows:
+
+     --cc _s_t_r_i_n_g
+             kksshh will execute the command(s) contained in _s_t_r_i_n_g.
+
+     --ii      Interactive shell.  A shell is “interactive” if this option is
+             used or if both standard input and standard error are attached to
+             a tty(4).  An interactive shell has job control enabled, ignores
+             the SIGINT, SIGQUIT, and SIGTERM signals, and prints prompts
+             before reading input (see the PS1 and PS2 parameters).  For non-
+             interactive shells, the ttrraacckkaallll option is on by default (see the
+             sseett command below).
+
+     --ll      Login shell.  If the basename the shell is called with (i.e.
+             argv[0]) starts with ‘-’ or if this option is used, the shell is
+             assumed to be a login shell and the shell reads and executes the
+             contents of _/_e_t_c_/_p_r_o_f_i_l_e and _$_H_O_M_E_/_._p_r_o_f_i_l_e if they exist and are
+             readable.
+
+     --pp      Privileged shell.  A shell is “privileged” if this option is used
+             or if the real user ID or group ID does not match the effective
+             user ID or group ID (see getuid(2) and getgid(2)).  A privileged
+             shell does not process _$_H_O_M_E_/_._p_r_o_f_i_l_e nor the ENV parameter (see
+             below).  Instead, the file _/_e_t_c_/_s_u_i_d___p_r_o_f_i_l_e is processed.
+             Clearing the privileged option causes the shell to set its
+             effective user ID (group ID) to its real user ID (group ID).
+
+     --rr      Restricted shell.  A shell is “restricted” if this option is
+             used; if the basename the shell was invoked with was “rksh”; or
+             if the SHELL parameter is set to “rksh”.  The following
+             restrictions come into effect after the shell processes any
+             profile and ENV files:
+
+             ••   The ccdd command is disabled.
+             ••   The SHELL, ENV, and PATH parameters cannot be changed.
+             ••   Command names can't be specified with absolute or relative
+                 paths.
+             ••   The --pp option of the built-in command ccoommmmaanndd can't be used.
+             ••   Redirections that create files can't be used (i.e. ‘>>’, ‘>>||’,
+                 ‘>>>>’, ‘<<>>’).
+
+     --ss      The shell reads commands from standard input; all non-option
+             arguments are positional parameters.
+
+     In addition to the above, the options described in the sseett built-in
+     command can also be used on the command line: both [--++aabbCCeeffhhkkmmnnuuvvXXxx] and
+     [--++oo _o_p_t_i_o_n] can be used for single letter or long options, respectively.
+
+     If neither the --cc nor the --ss option is specified, the first non-option
+     argument specifies the name of a file the shell reads commands from.  If
+     there are no non-option arguments, the shell reads commands from the
+     standard input.  The name of the shell (i.e. the contents of $0) is
+     determined as follows: if the --cc option is used and there is a non-option
+     argument, it is used as the name; if commands are being read from a file,
+     the file is used as the name; otherwise, the basename the shell was
+     called with (i.e. argv[0]) is used.
+
+     If the ENV parameter is set when an interactive shell starts (or, in the
+     case of login shells, after any profiles are processed), its value is
+     subjected to parameter, command, arithmetic, and tilde (‘~’) substitution
+     and the resulting file (if any) is read and executed.  In order to have
+     an interactive (as opposed to login) shell process a startup file, ENV
+     may be set and exported (see below) in _$_H_O_M_E_/_._p_r_o_f_i_l_e - future
+     interactive shell invocations will process any file pointed to by $ENV:
+
+           export ENV=$HOME/.kshrc
+
+     _$_H_O_M_E_/_._k_s_h_r_c is then free to specify instructions for interactive shells.
+     For example, the global configuration file may be sourced:
+
+           . /etc/ksh.kshrc
+
+     The above strategy may be employed to keep setup procedures for login
+     shells in _$_H_O_M_E_/_._p_r_o_f_i_l_e and setup procedures for interactive shells in
+     _$_H_O_M_E_/_._k_s_h_r_c.  Of course, since login shells are also interactive, any
+     commands placed in _$_H_O_M_E_/_._k_s_h_r_c will be executed by login shells too.
+
+     The exit status of the shell is 127 if the command file specified on the
+     command line could not be opened, or non-zero if a fatal syntax error
+     occurred during the execution of a script.  In the absence of fatal
+     errors, the exit status is that of the last command executed, or zero, if
+     no command is executed.
+

@@ -1,0 +1,394 @@
+   PPaarraammeetteerrss
+     Parameters are shell variables; they can be assigned values and their
+     values can be accessed using a parameter substitution.  A parameter name
+     is either one of the special single punctuation or digit character
+     parameters described below, or a letter followed by zero or more letters
+     or digits (‘_’ counts as a letter).  The latter form can be treated as
+     arrays by appending an array index of the form [_e_x_p_r] where _e_x_p_r is an
+     arithmetic expression.  Parameter substitutions take the form $_n_a_m_e,
+     ${_n_a_m_e}, or ${_n_a_m_e[_e_x_p_r]} where _n_a_m_e is a parameter name.  If _e_x_p_r is a
+     literal ‘@’ then the named array is expanded using the same quoting rules
+     as ‘$@’, while if _e_x_p_r is a literal ‘*’ then the named array is expanded
+     using the same quoting rules as ‘$*’.  If substitution is performed on a
+     parameter (or an array parameter element) that is not set, a null string
+     is substituted unless the nnoouunnsseett option (sseett --oo nnoouunnsseett or sseett --uu) is
+     set, in which case an error occurs.
+
+     Parameters can be assigned values in a number of ways.  First, the shell
+     implicitly sets some parameters like ‘#’, ‘PWD’, and ‘$’; this is the
+     only way the special single character parameters are set.  Second,
+     parameters are imported from the shell's environment at startup.  Third,
+     parameters can be assigned values on the command line: for example,
+     FFOOOO==bbaarr sets the parameter “FOO” to “bar”; multiple parameter assignments
+     can be given on a single command line and they can be followed by a
+     simple-command, in which case the assignments are in effect only for the
+     duration of the command (such assignments are also exported; see below
+     for the implications of this).  Note that both the parameter name and the
+     ‘=’ must be unquoted for the shell to recognize a parameter assignment.
+     The fourth way of setting a parameter is with the eexxppoorrtt, rreeaaddoonnllyy, and
+     ttyyppeesseett commands; see their descriptions in the _C_o_m_m_a_n_d _e_x_e_c_u_t_i_o_n
+     section.  Fifth, ffoorr and sseelleecctt loops set parameters as well as the
+     ggeettooppttss, rreeaadd, and sseett --AA commands.  Lastly, parameters can be assigned
+     values using assignment operators inside arithmetic expressions (see
+     _A_r_i_t_h_m_e_t_i_c _e_x_p_r_e_s_s_i_o_n_s below) or using the ${_n_a_m_e=_v_a_l_u_e} form of the
+     parameter substitution (see below).
+
+     Parameters with the export attribute (set using the eexxppoorrtt or ttyyppeesseett --xx
+     commands, or by parameter assignments followed by simple commands) are
+     put in the environment (see environ(7)) of commands run by the shell as
+     _n_a_m_e=_v_a_l_u_e pairs.  The order in which parameters appear in the
+     environment of a command is unspecified.  When the shell starts up, it
+     extracts parameters and their values from its environment and
+     automatically sets the export attribute for those parameters.
+
+     Modifiers can be applied to the ${_n_a_m_e} form of parameter substitution:
+
+     ${_n_a_m_e:-_w_o_r_d}
+             If _n_a_m_e is set and not NULL, it is substituted; otherwise, _w_o_r_d
+             is substituted.
+
+     ${_n_a_m_e:+_w_o_r_d}
+             If _n_a_m_e is set and not NULL, _w_o_r_d is substituted; otherwise,
+             nothing is substituted.
+
+     ${_n_a_m_e:=_w_o_r_d}
+             If _n_a_m_e is set and not NULL, it is substituted; otherwise, it is
+             assigned _w_o_r_d and the resulting value of _n_a_m_e is substituted.
+
+     ${_n_a_m_e:?_w_o_r_d}
+             If _n_a_m_e is set and not NULL, it is substituted; otherwise, _w_o_r_d
+             is printed on standard error (preceded by _n_a_m_e:) and an error
+             occurs (normally causing termination of a shell script, function,
+             or script sourced using the ‘.’ built-in).  If _w_o_r_d is omitted,
+             the string “parameter null or not set” is used instead.
+
+     In the above modifiers, the ‘:’ can be omitted, in which case the
+     conditions only depend on _n_a_m_e being set (as opposed to set and not
+     NULL).  If _w_o_r_d is needed, parameter, command, arithmetic, and tilde
+     substitution are performed on it; if _w_o_r_d is not needed, it is not
+     evaluated.
+
+     The following forms of parameter substitution can also be used:
+
+     ${#_n_a_m_e}
+             The number of positional parameters if _n_a_m_e is ‘*’, ‘@’, or not
+             specified; otherwise the length of the string value of parameter
+             _n_a_m_e.
+
+     ${#_n_a_m_e[*]}
+     ${#_n_a_m_e[@]}
+             The number of elements in the array _n_a_m_e.
+
+     ${_n_a_m_e#_p_a_t_t_e_r_n}
+     ${_n_a_m_e##_p_a_t_t_e_r_n}
+             If _p_a_t_t_e_r_n matches the beginning of the value of parameter _n_a_m_e,
+             the matched text is deleted from the result of substitution.  A
+             single ‘#’ results in the shortest match, and two of them result
+             in the longest match.
+
+     ${_n_a_m_e%_p_a_t_t_e_r_n}
+     ${_n_a_m_e%%_p_a_t_t_e_r_n}
+             Like ${..#..} substitution, but it deletes from the end of the
+             value.
+
+     The following special parameters are implicitly set by the shell and
+     cannot be set directly using assignments:
+
+     !        Process ID of the last background process started.  If no
+              background processes have been started, the parameter is not
+              set.
+
+     #        The number of positional parameters ($1, $2, etc.).
+
+     $        The PID of the shell, or the PID of the original shell if it is
+              a subshell.  Do _N_O_T use this mechanism for generating temporary
+              file names; see mktemp(1) instead.
+
+     -        The concatenation of the current single letter options (see the
+              sseett command below for a list of options).
+
+     ?        The exit status of the last non-asynchronous command executed.
+              If the last command was killed by a signal, $$?? is set to 128
+              plus the signal number.
+
+     0        The name of the shell, determined as follows: the first argument
+              to kksshh if it was invoked with the --cc option and arguments were
+              given; otherwise the _f_i_l_e argument, if it was supplied; or else
+              the basename the shell was invoked with (i.e. argv[0]).  $0 is
+              also set to the name of the current script or the name of the
+              current function, if it was defined with the ffuunnccttiioonn keyword
+              (i.e. a Korn shell style function).
+
+     1 ... 9  The first nine positional parameters that were supplied to the
+              shell, function, or script sourced using the ‘.’ built-in.
+              Further positional parameters may be accessed using ${_n_u_m_b_e_r}.
+
+     *        All positional parameters (except parameter 0) i.e. $1, $2, $3,
+              ...  If used outside of double quotes, parameters are separate
+              words (which are subjected to word splitting); if used within
+              double quotes, parameters are separated by the first character
+              of the IFS parameter (or the empty string if IFS is NULL).
+
+     @        Same as $$**, unless it is used inside double quotes, in which
+              case a separate word is generated for each positional parameter.
+              If there are no positional parameters, no word is generated.  $$@@
+              can be used to access arguments, verbatim, without losing NULL
+              arguments or splitting arguments with spaces.
+
+     The following parameters are set and/or used by the shell:
+
+     _ (underscore)
+                When an external command is executed by the shell, this
+                parameter is set in the environment of the new process to the
+                path of the executed command.  In interactive use, this
+                parameter is also set in the parent shell to the last word of
+                the previous command.  When MAILPATH messages are evaluated,
+                this parameter contains the name of the file that changed (see
+                the MAILPATH parameter, below).
+
+     CDPATH     Search path for the ccdd built-in command.  It works the same
+                way as PATH for those directories not beginning with ‘/’ or
+                ‘.’ in ccdd commands.  Note that if CDPATH is set and does not
+                contain ‘.’ or an empty path, the current directory is not
+                searched.  Also, the ccdd built-in command will display the
+                resulting directory when a match is found in any search path
+                other than the empty path.
+
+     COLUMNS    Set to the number of columns on the terminal or window.
+                Currently set to the “cols” value as reported by stty(1) if
+                that value is non-zero.  This parameter is used by the
+                interactive line editing modes, and by the sseelleecctt, sseett --oo, and
+                kkiillll --ll commands to format information columns.
+
+     EDITOR     If the VISUAL parameter is not set, this parameter controls
+                the command-line editing mode for interactive shells.  See the
+                VISUAL parameter below for how this works.
+
+                Note: traditionally, EDITOR was used to specify the name of an
+                (old-style) line editor, such as ed(1), and VISUAL was used to
+                specify a (new-style) screen editor, such as vi(1).  Hence if
+                VISUAL is set, it overrides EDITOR.
+
+     ENV        If this parameter is found to be set after any profile files
+                are executed, the expanded value is used as a shell startup
+                file.  It typically contains function and alias definitions.
+
+     EXECSHELL  If set, this parameter is assumed to contain the shell that is
+                to be used to execute commands that execve(2) fails to execute
+                and which do not start with a “#!_s_h_e_l_l” sequence.
+
+     FCEDIT     The editor used by the ffcc command (see below).
+
+     FPATH      Like PATH, but used when an undefined function is executed to
+                locate the file defining the function.  It is also searched
+                when a command can't be found using PATH.  See _F_u_n_c_t_i_o_n_s below
+                for more information.
+
+     HISTCONTROL
+                A colon separated list of history settings.  If ignoredups is
+                present, lines identical to the previous history line will not
+                be saved.  If ignorespace is present, lines starting with a
+                space will not be saved.  Unknown settings are ignored.
+
+     HISTFILE   The name of the file used to store command history.  When
+                assigned to, history is loaded from the specified file.  Also,
+                several invocations of the shell running on the same machine
+                will share history if their HISTFILE parameters all point to
+                the same file.
+
+                NNoottee: If HISTFILE isn't set, no history file is used.  This is
+                different from the original Korn shell, which uses
+                _$_H_O_M_E_/_._s_h___h_i_s_t_o_r_y.
+
+     HISTSIZE   The number of commands normally stored for history.  The
+                default is 500.
+
+     HOME       The default directory for the ccdd command and the value
+                substituted for an unqualified ~~ (see _T_i_l_d_e _e_x_p_a_n_s_i_o_n below).
+
+     IFS        Internal field separator, used during substitution and by the
+                rreeaadd command, to split values into distinct arguments;
+                normally set to space, tab, and newline.  See _S_u_b_s_t_i_t_u_t_i_o_n
+                above for details.
+
+                NNoottee: This parameter is not imported from the environment when
+                the shell is started.
+
+     KSH_VERSION
+                The version of the shell and the date the version was created
+                (read-only).
+
+     LINENO     The line number of the function or shell script that is
+                currently being executed.
+
+     LINES      Set to the number of lines on the terminal or window.
+
+     MAIL       If set, the user will be informed of the arrival of mail in
+                the named file.  This parameter is ignored if the MAILPATH
+                parameter is set.
+
+     MAILCHECK  How often, in seconds, the shell will check for mail in the
+                file(s) specified by MAIL or MAILPATH.  If set to 0, the shell
+                checks before each prompt.  The default is 600 (10 minutes).
+
+     MAILPATH   A list of files to be checked for mail.  The list is colon
+                separated, and each file may be followed by a ‘?’ and a
+                message to be printed if new mail has arrived.  Command,
+                parameter, and arithmetic substitution is performed on the
+                message and, during substitution, the parameter $$__ contains
+                the name of the file.  The default message is “you have mail
+                in $_”.
+
+     OLDPWD     The previous working directory.  Unset if ccdd has not
+                successfully changed directories since the shell started, or
+                if the shell doesn't know where it is.
+
+     OPTARG     When using ggeettooppttss, it contains the argument for a parsed
+                option, if it requires one.
+
+     OPTIND     The index of the next argument to be processed when using
+                ggeettooppttss.  Assigning 1 to this parameter causes ggeettooppttss to
+                process arguments from the beginning the next time it is
+                invoked.
+
+     PATH       A colon separated list of directories that are searched when
+                looking for commands and files sourced using the ‘.’ command
+                (see below).  An empty string resulting from a leading or
+                trailing colon, or two adjacent colons, is treated as a ‘.’
+                (the current directory).
+
+     POSIXLY_CORRECT
+                If set, this parameter causes the ppoossiixx option to be enabled.
+                See _P_O_S_I_X _m_o_d_e below.
+
+     PPID       The process ID of the shell's parent (read-only).
+
+     PS1        The primary prompt for interactive shells.  Parameter,
+                command, and arithmetic substitutions are performed, and the
+                prompt string can be customised using backslash-escaped
+                special characters.
+
+                Note that since the command-line editors try to figure out how
+                long the prompt is (so they know how far it is to the edge of
+                the screen), escape codes in the prompt tend to mess things
+                up.  You can tell the shell not to count certain sequences
+                (such as escape codes) by using the \[_._._.\] substitution (see
+                below) or by prefixing your prompt with a non-printing
+                character (such as control-A) followed by a carriage return
+                and then delimiting the escape codes with this non-printing
+                character.  By the way, don't blame me for this hack; it's in
+                the original kksshh.
+
+                The default prompt is the first part of the hostname, followed
+                by ‘$ ’ for non-root users, ‘# ’ for root.
+
+                The following backslash-escaped special characters can be used
+                to customise the prompt:
+
+                \a            Insert an ASCII bell character.
+                \d            The current date, in the format “Day Month Date”
+                              for example “Wed Nov 03”.
+                \D{_f_o_r_m_a_t}    The current date, with _f_o_r_m_a_t converted by
+                              strftime(3).  The braces must be specified.
+                \e            Insert an ASCII escape character.
+                \h            The hostname, minus domain name.
+                \H            The full hostname, including domain name.
+                \j            Current number of jobs running (see _J_o_b _c_o_n_t_r_o_l
+                              below).
+                \l            The controlling terminal.
+                \n            Insert a newline character.
+                \r            Insert a carriage return character.
+                \s            The name of the shell.
+                \t            The current time, in 24-hour HH:MM:SS format.
+                \T            The current time, in 12-hour HH:MM:SS format.
+                \@            The current time, in 12-hour HH:MM:SS AM/PM
+                              format.
+                \A            The current time, in 24-hour HH:MM format.
+                \u            The current user's username.
+                \v            The current version of kksshh.
+                \V            Like ‘\v’, but more verbose.
+                \w            The current working directory.  $HOME is
+                              abbreviated as ‘~’.
+                \W            The basename of the current working directory.
+                              $HOME is abbreviated as ‘~’.
+                \!            The current history number.  An unescaped ‘!’
+                              will produce the current history number too, as
+                              per the POSIX specification.  A literal ‘!’ can
+                              be put in the prompt by placing ‘!!’ in PS1.
+                \#            The current command number.  This could be
+                              different to the current history number, if
+                              HISTFILE contains a history list from a previous
+                              session.
+                \$            The default prompt character i.e. ‘#’ if the
+                              effective UID is 0, otherwise ‘$’.  Since the
+                              shell interprets ‘$’ as a special character
+                              within double quotes, it is safer in this case
+                              to escape the backslash than to try quoting it.
+                \_n_n_n          The octal character _n_n_n.
+                \\            Insert a single backslash character.
+                \[            Normally the shell keeps track of the number of
+                              characters in the prompt.  Use of this sequence
+                              turns off that count.
+                \]            Use of this sequence turns the count back on.
+
+                Note that the backslash itself may be interpreted by the
+                shell.  Hence, to set PS1 either escape the backslash itself,
+                or use double quotes.  The latter is more practical:
+
+                      PS1="\u "
+
+                This is a more complex example, which does not rely on the
+                above backslash-escaped sequences.  It embeds the current
+                working directory, in reverse video, in the prompt string:
+
+                      x=$(print \\001)
+                      PS1="$x$(print \\r)$x$(tput so)$x\$PWD$x$(tput se)$x> "
+
+     PS2        Secondary prompt string, by default ‘> ’, used when more input
+                is needed to complete a command.
+
+     PS3        Prompt used by the sseelleecctt statement when reading a menu
+                selection.  The default is ‘#? ’.
+
+     PS4        Used to prefix commands that are printed during execution
+                tracing (see the sseett --xx command below).  Parameter, command,
+                and arithmetic substitutions are performed before it is
+                printed.  The default is ‘+ ’.
+
+     PWD        The current working directory.  May be unset or NULL if the
+                shell doesn't know where it is.
+
+     RANDOM     A random number generator.  Every time RANDOM is referenced,
+                it is assigned the next random number in the range 0-32767.
+                By default, arc4random(3) is used to produce values.  If the
+                variable RANDOM is assigned a value, the value is used as the
+                seed to srand_deterministic(3) and subsequent references of
+                RANDOM produce a predictable sequence.
+
+     REPLY      Default parameter for the rreeaadd command if no names are given.
+                Also used in sseelleecctt loops to store the value that is read from
+                standard input.
+
+     SECONDS    The number of seconds since the shell started or, if the
+                parameter has been assigned an integer value, the number of
+                seconds since the assignment plus the value that was assigned.
+
+     TERM       The user's terminal type.  If set, it will be used to
+                determine the escape sequence used to clear the screen.
+
+     TMOUT      If set to a positive integer in an interactive shell, it
+                specifies the maximum number of seconds the shell will wait
+                for input after printing the primary prompt (PS1).  If the
+                time is exceeded, the shell exits.
+
+     TMPDIR     The directory temporary shell files are created in.  If this
+                parameter is not set, or does not contain the absolute path of
+                a writable directory, temporary files are created in _/_t_m_p.
+
+     VISUAL     If set, this parameter controls the command-line editing mode
+                for interactive shells.  If the last component of the path
+                specified in this parameter contains the string “vi”, “emacs”,
+                or “gmacs”, the vi(1), emacs, or gmacs (Gosling emacs) editing
+                mode is enabled, respectively.  See also the EDITOR parameter,
+                above.
+

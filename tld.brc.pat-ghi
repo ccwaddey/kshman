@@ -1,0 +1,110 @@
+   TTiillddee eexxppaannssiioonn
+     Tilde expansion, which is done in parallel with parameter substitution,
+     is done on words starting with an unquoted ‘~’.  The characters following
+     the tilde, up to the first ‘/’, if any, are assumed to be a login name.
+     If the login name is empty, ‘+’, or ‘-’, the value of the HOME, PWD, or
+     OLDPWD parameter is substituted, respectively.  Otherwise, the password
+     file is searched for the login name, and the tilde expression is
+     substituted with the user's home directory.  If the login name is not
+     found in the password file or if any quoting or parameter substitution
+     occurs in the login name, no substitution is performed.
+
+     In parameter assignments (such as those preceding a simple-command or
+     those occurring in the arguments of aalliiaass, eexxppoorrtt, rreeaaddoonnllyy, and
+     ttyyppeesseett), tilde expansion is done after any assignment (i.e. after the
+     equals sign) or after an unquoted colon (‘:’); login names are also
+     delimited by colons.
+
+     The home directory of previously expanded login names are cached and re-
+     used.  The aalliiaass --dd command may be used to list, change, and add to this
+     cache (e.g. aalliiaass --dd ffaacc==//uussrr//llooccaall//ffaacciilliittiieess;; ccdd ~~ffaacc//bbiinn).
+
+   BBrraaccee eexxppaannssiioonn ((aalltteerrnnaattiioonn))
+     Brace expressions take the following form:
+
+           _p_r_e_f_i_x{_s_t_r_1,...,
+           _s_t_r_N}_s_u_f_f_i_x
+
+     The expressions are expanded to _N words, each of which is the
+     concatenation of _p_r_e_f_i_x, _s_t_ri, and _s_u_f_f_i_x (e.g. “a{c,b{X,Y},d}e” expands
+     to four words: “ace”, “abXe”, “abYe”, and “ade”).  As noted in the
+     example, brace expressions can be nested and the resulting words are not
+     sorted.  Brace expressions must contain an unquoted comma (‘,’) for
+     expansion to occur (e.g. {{}} and {{ffoooo}} are not expanded).  Brace expansion
+     is carried out after parameter substitution and before file name
+     generation.
+
+   FFiillee nnaammee ppaatttteerrnnss
+     A file name pattern is a word containing one or more unquoted ‘?’, ‘*’,
+     ‘+’, ‘@’, or ‘!’ characters or “[..]” sequences.  Once brace expansion
+     has been performed, the shell replaces file name patterns with the sorted
+     names of all the files that match the pattern (if no files match, the
+     word is left unchanged).  The pattern elements have the following
+     meaning:
+
+     ?       Matches any single character.
+
+     *       Matches any sequence of characters.
+
+     [..]    Matches any of the characters inside the brackets.  Ranges of
+             characters can be specified by separating two characters by a ‘-’
+             (e.g. “[a0-9]” matches the letter ‘a’ or any digit).  In order to
+             represent itself, a ‘-’ must either be quoted or the first or
+             last character in the character list.  Similarly, a ‘]’ must be
+             quoted or the first character in the list if it is to represent
+             itself instead of the end of the list.  Also, a ‘!’ appearing at
+             the start of the list has special meaning (see below), so to
+             represent itself it must be quoted or appear later in the list.
+
+             Within a bracket expression, the name of a _c_h_a_r_a_c_t_e_r _c_l_a_s_s
+             enclosed in ‘[:’ and ‘:]’ stands for the list of all characters
+             belonging to that class.  Supported character classes:
+
+                   alnum   cntrl   lower   space
+                   alpha   digit   print   upper
+                   blank   graph   punct   xdigit
+
+             These match characters using the macros specified in isalnum(3),
+             isalpha(3), and so on.  A character class may not be used as an
+             endpoint of a range.
+
+     [!..]   Like [..], except it matches any character not inside the
+             brackets.
+
+     *(_p_a_t_t_e_r_n|...|_p_a_t_t_e_r_n)
+             Matches any string of characters that matches zero or more
+             occurrences of the specified patterns.  Example: The pattern
+             **((ffoooo||bbaarr)) matches the strings “”, “foo”, “bar”, “foobarfoo”,
+             etc.
+
+     +(_p_a_t_t_e_r_n|...|_p_a_t_t_e_r_n)
+             Matches any string of characters that matches one or more
+             occurrences of the specified patterns.  Example: The pattern
+             ++((ffoooo||bbaarr)) matches the strings “foo”, “bar”, “foobar”, etc.
+
+     ?(_p_a_t_t_e_r_n|...|_p_a_t_t_e_r_n)
+             Matches the empty string or a string that matches one of the
+             specified patterns.  Example: The pattern ??((ffoooo||bbaarr)) only matches
+             the strings “”, “foo”, and “bar”.
+
+     @(_p_a_t_t_e_r_n|...|_p_a_t_t_e_r_n)
+             Matches a string that matches one of the specified patterns.
+             Example: The pattern @@((ffoooo||bbaarr)) only matches the strings “foo”
+             and “bar”.
+
+     !(_p_a_t_t_e_r_n|...|_p_a_t_t_e_r_n)
+             Matches any string that does not match one of the specified
+             patterns.  Examples: The pattern !!((ffoooo||bbaarr)) matches all strings
+             except “foo” and “bar”; the pattern !!((**)) matches no strings; the
+             pattern !!((??))** matches all strings (think about it).
+
+     Unlike most shells, kksshh never matches ‘.’ and ‘..’.
+
+     Note that none of the above pattern elements match either a period (‘.’)
+     at the start of a file name or a slash (‘/’), even if they are explicitly
+     used in a [..] sequence; also, the names ‘.’ and ‘..’ are never matched,
+     even by the pattern ‘.*’.
+
+     If the mmaarrkkddiirrss option is set, any directories that result from file name
+     generation are marked with a trailing ‘/’.
+

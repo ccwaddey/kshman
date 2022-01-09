@@ -1,0 +1,76 @@
+   IInnppuutt//oouuttppuutt rreeddiirreeccttiioonn
+     When a command is executed, its standard input, standard output, and
+     standard error (file descriptors 0, 1, and 2, respectively) are normally
+     inherited from the shell.  Three exceptions to this are commands in
+     pipelines, for which standard input and/or standard output are those set
+     up by the pipeline, asynchronous commands created when job control is
+     disabled, for which standard input is initially set to be from _/_d_e_v_/_n_u_l_l,
+     and commands for which any of the following redirections have been
+     specified:
+
+     >> _f_i_l_e  Standard output is redirected to _f_i_l_e.  If _f_i_l_e does not exist,
+             it is created; if it does exist, is a regular file, and the
+             nnoocclloobbbbeerr option is set, an error occurs; otherwise, the file is
+             truncated.  Note that this means the command ccmmdd << ffoooo >> ffoooo will
+             open _f_o_o for reading and then truncate it when it opens it for
+             writing, before _c_m_d gets a chance to actually read _f_o_o.
+
+     >>|| _f_i_l_e
+             Same as >>, except the file is truncated, even if the nnoocclloobbbbeerr
+             option is set.
+
+     >>>> _f_i_l_e
+             Same as >>, except if _f_i_l_e exists it is appended to instead of
+             being truncated.  Also, the file is opened in append mode, so
+             writes always go to the end of the file (see open(2)).
+
+     << _f_i_l_e  Standard input is redirected from _f_i_l_e, which is opened for
+             reading.
+
+     <<>> _f_i_l_e
+             Same as <<, except the file is opened for reading and writing.
+
+     <<<< _m_a_r_k_e_r
+             After reading the command line containing this kind of
+             redirection (called a “here document”), the shell copies lines
+             from the command source into a temporary file until a line
+             matching _m_a_r_k_e_r is read.  When the command is executed, standard
+             input is redirected from the temporary file.  If _m_a_r_k_e_r contains
+             no quoted characters, the contents of the temporary file are
+             processed as if enclosed in double quotes each time the command
+             is executed, so parameter, command, and arithmetic substitutions
+             are performed, along with backslash (‘\’) escapes for ‘$’, ‘`’,
+             ‘\’, and ‘\newline’.  If multiple here documents are used on the
+             same command line, they are saved in order.
+
+     <<<<-- _m_a_r_k_e_r
+             Same as <<<<, except leading tabs are stripped from lines in the
+             here document.
+
+     <<&& _f_d   Standard input is duplicated from file descriptor _f_d.  _f_d can be
+             a single digit, indicating the number of an existing file
+             descriptor; the letter ‘p’, indicating the file descriptor
+             associated with the output of the current co-process; or the
+             character ‘-’, indicating standard input is to be closed.
+
+     >>&& _f_d   Same as <<&&, except the operation is done on standard output.
+
+     In any of the above redirections, the file descriptor that is redirected
+     (i.e. standard input or standard output) can be explicitly given by
+     preceding the redirection with a single digit.  Parameter, command, and
+     arithmetic substitutions, tilde substitutions, and (if the shell is
+     interactive) file name generation are all performed on the _f_i_l_e, _m_a_r_k_e_r,
+     and _f_d arguments of redirections.  Note, however, that the results of any
+     file name generation are only used if a single file is matched; if
+     multiple files match, the word with the expanded file name generation
+     characters is used.  Note that in restricted shells, redirections which
+     can create files cannot be used.
+
+     For simple-commands, redirections may appear anywhere in the command; for
+     compound-commands (iiff statements, etc.), any redirections must appear at
+     the end.  Redirections are processed after pipelines are created and in
+     the order they are given, so the following will print an error with a
+     line number prepended to it:
+
+           $ cat /foo/bar 2>&1 > /dev/null | cat -n
+

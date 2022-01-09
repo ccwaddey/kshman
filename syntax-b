@@ -1,0 +1,244 @@
+   CCoommmmaanndd ssyynnttaaxx
+     The shell begins parsing its input by breaking it into _w_o_r_d_s.  Words,
+     which are sequences of characters, are delimited by unquoted whitespace
+     characters (space, tab, and newline) or meta-characters (‘<’, ‘>’, ‘|’,
+     ‘;’, ‘(’, ‘)’, and ‘&’).  Aside from delimiting words, spaces and tabs
+     are ignored, while newlines usually delimit commands.  The meta-
+     characters are used in building the following _t_o_k_e_n_s: ‘<<’, ‘<<&&’, ‘<<<<’,
+     ‘>>’, ‘>>&&’, ‘>>>>’, etc. are used to specify redirections (see _I_n_p_u_t_/_o_u_t_p_u_t
+     _r_e_d_i_r_e_c_t_i_o_n below); ‘|’ is used to create pipelines; ‘|&’ is used to
+     create co-processes (see _C_o_-_p_r_o_c_e_s_s_e_s below); ‘;’ is used to separate
+     commands; ‘&’ is used to create asynchronous pipelines; ‘&&’ and ‘||’ are
+     used to specify conditional execution; ‘;;’ is used in ccaassee statements;
+     ‘(( .. ))’ is used in arithmetic expressions; and lastly, ‘( .. )’ is
+     used to create subshells.
+
+     Whitespace and meta-characters can be quoted individually using a
+     backslash (‘\’), or in groups using double (‘"’) or single (‘'’) quotes.
+     The following characters are also treated specially by the shell and must
+     be quoted if they are to represent themselves: ‘\’, ‘"’, ‘'’, ‘#’, ‘$’,
+     ‘`’, ‘~’, ‘{’, ‘}’, ‘*’, ‘?’, and ‘[’.  The first three of these are the
+     above mentioned quoting characters (see _Q_u_o_t_i_n_g below); ‘#’, if used at
+     the beginning of a word, introduces a comment — everything after the ‘#’
+     up to the nearest newline is ignored; ‘$’ is used to introduce parameter,
+     command, and arithmetic substitutions (see _S_u_b_s_t_i_t_u_t_i_o_n below); ‘`’
+     introduces an old-style command substitution (see _S_u_b_s_t_i_t_u_t_i_o_n below);
+     ‘~’ begins a directory expansion (see _T_i_l_d_e _e_x_p_a_n_s_i_o_n below); ‘{’ and ‘}’
+     delimit csh(1)-style alternations (see _B_r_a_c_e _e_x_p_a_n_s_i_o_n below); and
+     finally, ‘*’, ‘?’, and ‘[’ are used in file name generation (see _F_i_l_e
+     _n_a_m_e _p_a_t_t_e_r_n_s below).
+
+     As words and tokens are parsed, the shell builds commands, of which there
+     are two basic types: _s_i_m_p_l_e_-_c_o_m_m_a_n_d_s, typically programs that are
+     executed, and _c_o_m_p_o_u_n_d_-_c_o_m_m_a_n_d_s, such as ffoorr and iiff statements, grouping
+     constructs, and function definitions.
+
+     A simple-command consists of some combination of parameter assignments
+     (see _P_a_r_a_m_e_t_e_r_s below), input/output redirections (see _I_n_p_u_t_/_o_u_t_p_u_t
+     _r_e_d_i_r_e_c_t_i_o_n_s below), and command words; the only restriction is that
+     parameter assignments come before any command words.  The command words,
+     if any, define the command that is to be executed and its arguments.  The
+     command may be a shell built-in command, a function, or an external
+     command (i.e. a separate executable file that is located using the PATH
+     parameter; see _C_o_m_m_a_n_d _e_x_e_c_u_t_i_o_n below).
+
+     All command constructs have an exit status.  For external commands, this
+     is related to the status returned by wait(2) (if the command could not be
+     found, the exit status is 127; if it could not be executed, the exit
+     status is 126).  The exit status of other command constructs (built-in
+     commands, functions, compound-commands, pipelines, lists, etc.) are all
+     well-defined and are described where the construct is described.  The
+     exit status of a command consisting only of parameter assignments is that
+     of the last command substitution performed during the parameter
+     assignment or 0 if there were no command substitutions.
+
+     Commands can be chained together using the ‘|’ token to form pipelines,
+     in which the standard output of each command but the last is piped (see
+     pipe(2)) to the standard input of the following command.  The exit status
+     of a pipeline is that of its last command, unless the ppiippeeffaaiill option is
+     set.  A pipeline may be prefixed by the ‘!’ reserved word, which causes
+     the exit status of the pipeline to be logically complemented: if the
+     original status was 0, the complemented status will be 1; if the original
+     status was not 0, the complemented status will be 0.
+
+     _L_i_s_t_s of commands can be created by separating pipelines by any of the
+     following tokens: ‘&&’, ‘||’, ‘&’, ‘|&’, and ‘;’.  The first two are for
+     conditional execution: “_c_m_d_1 && _c_m_d_2” executes _c_m_d_2 only if the exit
+     status of _c_m_d_1 is zero; ‘||’ is the opposite — _c_m_d_2 is executed only if
+     the exit status of _c_m_d_1 is non-zero.  ‘&&’ and ‘||’ have equal precedence
+     which is higher than that of ‘&’, ‘|&’, and ‘;’, which also have equal
+     precedence.  The ‘&&’ and ‘||’ operators are "left-associative".  For
+     example, both of these commands will print only "bar":
+
+           $ false && echo foo || echo bar
+           $ true || echo foo && echo bar
+
+     The ‘&’ token causes the preceding command to be executed asynchronously;
+     that is, the shell starts the command but does not wait for it to
+     complete (the shell does keep track of the status of asynchronous
+     commands; see _J_o_b _c_o_n_t_r_o_l below).  When an asynchronous command is
+     started when job control is disabled (i.e. in most scripts), the command
+     is started with signals SIGINT and SIGQUIT ignored and with input
+     redirected from _/_d_e_v_/_n_u_l_l (however, redirections specified in the
+     asynchronous command have precedence).  The ‘|&’ operator starts a co-
+     process which is a special kind of asynchronous process (see _C_o_-_p_r_o_c_e_s_s_e_s
+     below).  A command must follow the ‘&&’ and ‘||’ operators, while it need
+     not follow ‘&’, ‘|&’, or ‘;’.  The exit status of a list is that of the
+     last command executed, with the exception of asynchronous lists, for
+     which the exit status is 0.
+
+     Compound commands are created using the following reserved words.  These
+     words are only recognized if they are unquoted and if they are used as
+     the first word of a command (i.e. they can't be preceded by parameter
+     assignments or redirections):
+
+           case   esac       in       until   ((   }
+           do     fi         name     while   ))
+           done   for        select   !       [[
+           elif   function   then     (       ]]
+           else   if         time     )       {
+
+     NNoottee: Some shells (but not this one) execute control structure commands
+     in a subshell when one or more of their file descriptors are redirected,
+     so any environment changes inside them may fail.  To be portable, the
+     eexxeecc statement should be used instead to redirect file descriptors before
+     the control structure.
+
+     In the following compound command descriptions, command lists (denoted as
+     _l_i_s_t) that are followed by reserved words must end with a semicolon, a
+     newline, or a (syntactically correct) reserved word.  For example, the
+     following are all valid:
+
+           $ { echo foo; echo bar; }
+           $ { echo foo; echo bar<newline> }
+           $ { { echo foo; echo bar; } }
+
+     This is not valid:
+
+           $ { echo foo; echo bar }
+
+     (_l_i_s_t)  Execute _l_i_s_t in a subshell.  There is no implicit way to pass
+             environment changes from a subshell back to its parent.
+
+     { _l_i_s_t; }
+             Compound construct; _l_i_s_t is executed, but not in a subshell.
+             Note that ‘{’ and ‘}’ are reserved words, not meta-characters.
+
+     ccaassee _w_o_r_d iinn [[(] _p_a_t_t_e_r_n [| _p_a_t_t_e_r_n] ...) _l_i_s_t ;; ] ... eessaacc
+             The ccaassee statement attempts to match _w_o_r_d against a specified
+             _p_a_t_t_e_r_n; the _l_i_s_t associated with the first successfully matched
+             pattern is executed.  Patterns used in ccaassee statements are the
+             same as those used for file name patterns except that the
+             restrictions regarding ‘.’ and ‘/’ are dropped.  Note that any
+             unquoted space before and after a pattern is stripped; any space
+             within a pattern must be quoted.  Both the word and the patterns
+             are subject to parameter, command, and arithmetic substitution,
+             as well as tilde substitution.  For historical reasons, open and
+             close braces may be used instead of iinn and eessaacc e.g. ccaassee $$ffoooo {{
+             **)) eecchhoo bbaarr;; }}.  The exit status of a ccaassee statement is that of
+             the executed _l_i_s_t; if no _l_i_s_t is executed, the exit status is
+             zero.
+
+     ffoorr _n_a_m_e [iinn [_w_o_r_d _._._.]]; ddoo _l_i_s_t; ddoonnee
+             For each _w_o_r_d in the specified word list, the parameter _n_a_m_e is
+             set to the word and _l_i_s_t is executed.  If iinn is not used to
+             specify a word list, the positional parameters ($1, $2, etc.) are
+             used instead.  For historical reasons, open and close braces may
+             be used instead of ddoo and ddoonnee e.g. ffoorr ii;; {{ eecchhoo $$ii;; }}.  The
+             exit status of a ffoorr statement is the last exit status of _l_i_s_t.
+             If there are no items, _l_i_s_t is not executed and the exit status
+             is zero.
+
+     iiff _l_i_s_t; tthheenn _l_i_s_t; [eelliiff _l_i_s_t; tthheenn _l_i_s_t;] ... [eellssee _l_i_s_t;] ffii
+             If the exit status of the first _l_i_s_t is zero, the second _l_i_s_t is
+             executed; otherwise, the _l_i_s_t following the eelliiff, if any, is
+             executed with similar consequences.  If all the lists following
+             the iiff and eelliiffs fail (i.e. exit with non-zero status), the _l_i_s_t
+             following the eellssee is executed.  The exit status of an iiff
+             statement is that of non-conditional _l_i_s_t that is executed; if no
+             non-conditional _l_i_s_t is executed, the exit status is zero.
+
+     sseelleecctt _n_a_m_e [iinn _w_o_r_d ...]; ddoo _l_i_s_t; ddoonnee
+             The sseelleecctt statement provides an automatic method of presenting
+             the user with a menu and selecting from it.  An enumerated list
+             of the specified _w_o_r_d(s) is printed on standard error, followed
+             by a prompt (PS3: normally ‘#? ’).  A number corresponding to one
+             of the enumerated words is then read from standard input, _n_a_m_e is
+             set to the selected word (or unset if the selection is not
+             valid), REPLY is set to what was read (leading/trailing space is
+             stripped), and _l_i_s_t is executed.  If a blank line (i.e. zero or
+             more IFS characters) is entered, the menu is reprinted without
+             executing _l_i_s_t.
+
+             When _l_i_s_t completes, the enumerated list is printed if REPLY is
+             NULL, the prompt is printed, and so on.  This process continues
+             until an end-of-file is read, an interrupt is received, or a
+             bbrreeaakk statement is executed inside the loop.  If “in word ...” is
+             omitted, the positional parameters are used (i.e. $1, $2, etc.).
+             For historical reasons, open and close braces may be used instead
+             of ddoo and ddoonnee e.g. sseelleecctt ii;; {{ eecchhoo $$ii;; }}.  The exit status of a
+             sseelleecctt statement is zero if a bbrreeaakk statement is used to exit the
+             loop, non-zero otherwise.
+
+     uunnttiill _l_i_s_t; ddoo _l_i_s_t; ddoonnee
+             This works like wwhhiillee, except that the body is executed only
+             while the exit status of the first _l_i_s_t is non-zero.
+
+     wwhhiillee _l_i_s_t; ddoo _l_i_s_t; ddoonnee
+             A wwhhiillee is a pre-checked loop.  Its body is executed as often as
+             the exit status of the first _l_i_s_t is zero.  The exit status of a
+             wwhhiillee statement is the last exit status of the _l_i_s_t in the body
+             of the loop; if the body is not executed, the exit status is
+             zero.
+
+     ffuunnccttiioonn _n_a_m_e { _l_i_s_t; }
+             Defines the function _n_a_m_e (see _F_u_n_c_t_i_o_n_s below).  Note that
+             redirections specified after a function definition are performed
+             whenever the function is executed, not when the function
+             definition is executed.
+
+     _n_a_m_e() _c_o_m_m_a_n_d
+             Mostly the same as ffuunnccttiioonn (see _F_u_n_c_t_i_o_n_s below).
+
+     ttiimmee [--pp] [_p_i_p_e_l_i_n_e]
+             The ttiimmee reserved word is described in the _C_o_m_m_a_n_d _e_x_e_c_u_t_i_o_n
+             section.
+
+     (((( _e_x_p_r_e_s_s_i_o_n ))))
+             The arithmetic expression _e_x_p_r_e_s_s_i_o_n is evaluated; equivalent to
+             lleett _e_x_p_r_e_s_s_i_o_n (see _A_r_i_t_h_m_e_t_i_c _e_x_p_r_e_s_s_i_o_n_s and the lleett command,
+             below).
+
+     [[[[ _e_x_p_r_e_s_s_i_o_n ]]]]
+             Similar to the tteesstt and [[ ... ]] commands (described later), with
+             the following exceptions:
+
+                   ••   Field splitting and file name generation are not
+                       performed on arguments.
+
+                   ••   The --aa (AND) and --oo (OR) operators are replaced with
+                       ‘&&’ and ‘||’, respectively.
+
+                   ••   Operators (e.g. ‘--ff’, ‘=’, ‘!’) must be unquoted.
+
+                   ••   The second operand of the ‘!=’ and ‘=’ expressions are
+                       patterns (e.g. the comparison [[[[ ffoooobbaarr == ff**rr ]]]]
+                       succeeds).
+
+                   ••   The ‘<’ and ‘>’ binary operators do not need to be
+                       quoted with the ‘\’ character.
+
+                   ••   The single argument form of tteesstt, which tests if the
+                       argument has a non-zero length, is not valid; explicit
+                       operators must always be used e.g. instead of [ _s_t_r ]
+                       use [[ -n _s_t_r ]].
+
+                   ••   Parameter, command, and arithmetic substitutions are
+                       performed as expressions are evaluated and lazy
+                       expression evaluation is used for the ‘&&’ and ‘||’
+                       operators.  This means that in the following statement,
+                       $$((<< ffoooo)) is evaluated if and only if the file _f_o_o
+                       exists and is readable:
+
+                             $ [[ -r foo && $(< foo) = b*r ]]
+

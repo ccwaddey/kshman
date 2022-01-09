@@ -1,0 +1,87 @@
+   JJoobb ccoonnttrrooll
+     Job control refers to the shell's ability to monitor and control jobs,
+     which are processes or groups of processes created for commands or
+     pipelines.  At a minimum, the shell keeps track of the status of the
+     background (i.e. asynchronous) jobs that currently exist; this
+     information can be displayed using the jjoobbss commands.  If job control is
+     fully enabled (using sseett --mm or sseett --oo mmoonniittoorr), as it is for interactive
+     shells, the processes of a job are placed in their own process group.
+     Foreground jobs can be stopped by typing the suspend character from the
+     terminal (normally ^Z), jobs can be restarted in either the foreground or
+     background using the ffgg and bbgg commands, and the state of the terminal is
+     saved or restored when a foreground job is stopped or restarted,
+     respectively.
+
+     Note that only commands that create processes (e.g. asynchronous
+     commands, subshell commands, and non-built-in, non-function commands) can
+     be stopped; commands like rreeaadd cannot be.
+
+     When a job is created, it is assigned a job number.  For interactive
+     shells, this number is printed inside “[..]”, followed by the process IDs
+     of the processes in the job when an asynchronous command is run.  A job
+     may be referred to in the bbgg, ffgg, jjoobbss, kkiillll, and wwaaiitt commands either by
+     the process ID of the last process in the command pipeline (as stored in
+     the $$!! parameter) or by prefixing the job number with a percent sign
+     (‘%’).  Other percent sequences can also be used to refer to jobs:
+
+     %+ | %% | %    The most recently stopped job or, if there are no stopped
+                    jobs, the oldest running job.
+
+     %-             The job that would be the %%++ job if the latter did not
+                    exist.
+
+     %_n             The job with job number _n.
+
+     %?_s_t_r_i_n_g       The job with its command containing the string _s_t_r_i_n_g (an
+                    error occurs if multiple jobs are matched).
+
+     %_s_t_r_i_n_g        The job with its command starting with the string _s_t_r_i_n_g
+                    (an error occurs if multiple jobs are matched).
+
+     When a job changes state (e.g. a background job finishes or foreground
+     job is stopped), the shell prints the following status information:
+
+           [_n_u_m_b_e_r] _f_l_a_g _s_t_a_t_u_s _c_o_m_m_a_n_d
+
+     where...
+
+     _n_u_m_b_e_r   is the job number of the job;
+
+     _f_l_a_g     is the ‘+’ or ‘-’ character if the job is the %%++ or %%-- job,
+              respectively, or space if it is neither;
+
+     _s_t_a_t_u_s   indicates the current state of the job and can be:
+
+              Done [_n_u_m_b_e_r]
+                         The job exited.  _n_u_m_b_e_r is the exit status of the
+                         job, which is omitted if the status is zero.
+
+              Running    The job has neither stopped nor exited (note that
+                         running does not necessarily mean consuming CPU time
+                         - the process could be blocked waiting for some
+                         event).
+
+              Stopped [_s_i_g_n_a_l]
+                         The job was stopped by the indicated _s_i_g_n_a_l (if no
+                         signal is given, the job was stopped by SIGTSTP).
+
+              _s_i_g_n_a_l_-_d_e_s_c_r_i_p_t_i_o_n [“core dumped”]
+                         The job was killed by a signal (e.g. memory fault,
+                         hangup); use kkiillll --ll for a list of signal
+                         descriptions.  The “core dumped” message indicates
+                         the process created a core file.
+
+     _c_o_m_m_a_n_d  is the command that created the process.  If there are multiple
+              processes in the job, each process will have a line showing its
+              _c_o_m_m_a_n_d and possibly its _s_t_a_t_u_s, if it is different from the
+              status of the previous process.
+
+     When an attempt is made to exit the shell while there are jobs in the
+     stopped state, the shell warns the user that there are stopped jobs and
+     does not exit.  If another attempt is immediately made to exit the shell,
+     the stopped jobs are sent a SIGHUP signal and the shell exits.
+     Similarly, if the nnoohhuupp option is not set and there are running jobs when
+     an attempt is made to exit a login shell, the shell warns the user and
+     does not exit.  If another attempt is immediately made to exit the shell,
+     the running jobs are sent a SIGHUP signal and the shell exits.
+

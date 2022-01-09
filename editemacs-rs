@@ -1,0 +1,266 @@
+   IInntteerraaccttiivvee iinnppuutt lliinnee eeddiittiinngg
+     The shell supports three modes of reading command lines from a tty(4) in
+     an interactive session, controlled by the eemmaaccss, ggmmaaccss, and vvii options
+     (at most one of these can be set at once).  The default is eemmaaccss.
+     Editing modes can be set explicitly using the sseett built-in, or implicitly
+     via the EDITOR and VISUAL environment variables.  If none of these
+     options are enabled, the shell simply reads lines using the normal tty(4)
+     driver.  If the eemmaaccss or ggmmaaccss option is set, the shell allows emacs-like
+     editing of the command; similarly, if the vvii option is set, the shell
+     allows vi-like editing of the command.  These modes are described in
+     detail in the following sections.
+
+     In these editing modes, if a line is longer than the screen width (see
+     the COLUMNS parameter), a ‘>’, ‘+’, or ‘<’ character is displayed in the
+     last column indicating that there are more characters after, before and
+     after, or before the current position, respectively.  The line is
+     scrolled horizontally as necessary.
+
+   EEmmaaccss eeddiittiinngg mmooddee
+     When the eemmaaccss option is set, interactive input line editing is enabled.
+     Warning: This mode is slightly different from the emacs mode in the
+     original Korn shell.  In this mode, various editing commands (typically
+     bound to one or more control characters) cause immediate actions without
+     waiting for a newline.  Several editing commands are bound to particular
+     control characters when the shell is invoked; these bindings can be
+     changed using the bbiinndd command.
+
+     The following is a list of available editing commands.  Each description
+     starts with the name of the command, suffixed with a colon; an [_n] (if
+     the command can be prefixed with a count); and any keys the command is
+     bound to by default, written using caret notation e.g. the ASCII ESC
+     character is written as ^[.  ^[A-Z] sequences are not case sensitive.  A
+     count prefix for a command is entered using the sequence ^[_n, where _n is
+     a sequence of 1 or more digits.  Unless otherwise specified, if a count
+     is omitted, it defaults to 1.
+
+     Note that editing command names are used only with the bbiinndd command.
+     Furthermore, many editing commands are useful only on terminals with a
+     visible cursor.  The default bindings were chosen to resemble
+     corresponding Emacs key bindings.  The user's tty(4) characters (e.g.
+     ERASE) are bound to reasonable substitutes and override the default
+     bindings.
+
+     abort: ^C, ^G
+             Useful as a response to a request for a sseeaarrcchh--hhiissttoorryy pattern in
+             order to abort the search.
+
+     auto-insert: [_n]
+             Simply causes the character to appear as literal input.  Most
+             ordinary characters are bound to this.
+
+     backward-char: [_n] ^B, ^X^D
+             Moves the cursor backward _n characters.
+
+     backward-word: [_n] ^[b
+             Moves the cursor backward to the beginning of the word; words
+             consist of alphanumerics, underscore (‘_’), and dollar sign (‘$’)
+             characters.
+
+     beginning-of-history: ^[<
+             Moves to the beginning of the history.
+
+     beginning-of-line: ^A
+             Moves the cursor to the beginning of the edited input line.
+
+     capitalize-word: [_n] ^[C, ^[c
+             Uppercase the first character in the next _n words, leaving the
+             cursor past the end of the last word.
+
+     clear-screen: ^L
+             Clears the screen if the TERM parameter is set and the terminal
+             supports clearing the screen, then reprints the prompt string and
+             the current input line.
+
+     comment: ^[#
+             If the current line does not begin with a comment character, one
+             is added at the beginning of the line and the line is entered (as
+             if return had been pressed); otherwise, the existing comment
+             characters are removed and the cursor is placed at the beginning
+             of the line.
+
+     complete: ^[^[
+             Automatically completes as much as is unique of the command name
+             or the file name containing the cursor.  If the entire remaining
+             command or file name is unique, a space is printed after its
+             completion, unless it is a directory name in which case ‘/’ is
+             appended.  If there is no command or file name with the current
+             partial word as its prefix, a bell character is output (usually
+             causing a beep to be sounded).
+
+             Custom completions may be configured by creating an array named
+             ‘complete_command’, optionally suffixed with an argument number
+             to complete only for a single argument.  So defining an array
+             named ‘complete_kill’ provides possible completions for any
+             argument to the kill(1) command, but ‘complete_kill_1’ only
+             completes the first argument.  For example, the following command
+             makes kksshh offer a selection of signal names for the first
+             argument to kill(1):
+
+                   set -A complete_kill_1 -- -9 -HUP -INFO -KILL -TERM
+
+     complete-command: ^X^[
+             Automatically completes as much as is unique of the command name
+             having the partial word up to the cursor as its prefix, as in the
+             ccoommpplleettee command above.
+
+     complete-file: ^[^X
+             Automatically completes as much as is unique of the file name
+             having the partial word up to the cursor as its prefix, as in the
+             ccoommpplleettee command described above.
+
+     complete-list: ^I, ^[=
+             Complete as much as is possible of the current word, and list the
+             possible completions for it.  If only one completion is possible,
+             match as in the ccoommpplleettee command above.
+
+     delete-char-backward: [_n] ERASE, ^?, ^H
+             Deletes _n characters before the cursor.
+
+     delete-char-forward: [_n] Delete
+             Deletes _n characters after the cursor.
+
+     delete-word-backward: [_n] WERASE, ^[ERASE, ^W, ^[^?, ^[^H, ^[h
+             Deletes _n words before the cursor.
+
+     delete-word-forward: [_n] ^[d
+             Deletes _n words after the cursor.
+
+     down-history: [_n] ^N, ^XB
+             Scrolls the history buffer forward _n lines (later).  Each input
+             line originally starts just after the last entry in the history
+             buffer, so ddoowwnn--hhiissttoorryy is not useful until either sseeaarrcchh--hhiissttoorryy
+             or uupp--hhiissttoorryy has been performed.
+
+     downcase-word: [_n] ^[L, ^[l
+             Lowercases the next _n words.
+
+     end-of-history: ^[>
+             Moves to the end of the history.
+
+     end-of-line: ^E
+             Moves the cursor to the end of the input line.
+
+     eot: ^_
+             Acts as an end-of-file; this is useful because edit-mode input
+             disables normal terminal input canonicalization.
+
+     eot-or-delete: [_n] ^D
+             Acts as eeoott if alone on a line; otherwise acts as
+             ddeelleettee--cchhaarr--ffoorrwwaarrdd.
+
+     error:  Error (ring the bell).
+
+     exchange-point-and-mark: ^X^X
+             Places the cursor where the mark is and sets the mark to where
+             the cursor was.
+
+     expand-file: ^[*
+             Appends a ‘*’ to the current word and replaces the word with the
+             result of performing file globbing on the word.  If no files
+             match the pattern, the bell is rung.
+
+     forward-char: [_n] ^F, ^XC
+             Moves the cursor forward _n characters.
+
+     forward-word: [_n] ^[f
+             Moves the cursor forward to the end of the _nth word.
+
+     goto-history: [_n] ^[g
+             Goes to history number _n.
+
+     kill-line: KILL
+             Deletes the entire input line.
+
+     kill-to-eol: [_n] ^K
+             Deletes the input from the cursor to the end of the line if _n is
+             not specified; otherwise deletes characters between the cursor
+             and column _n.
+
+     list: ^[?
+             Prints a sorted, columnated list of command names or file names
+             (if any) that can complete the partial word containing the
+             cursor.  Directory names have ‘/’ appended to them.
+
+     list-command: ^X?
+             Prints a sorted, columnated list of command names (if any) that
+             can complete the partial word containing the cursor.
+
+     list-file: ^X^Y
+             Prints a sorted, columnated list of file names (if any) that can
+             complete the partial word containing the cursor.  File type
+             indicators are appended as described under lliisstt above.
+
+     newline: ^J, ^M
+             Causes the current input line to be processed by the shell.  The
+             current cursor position may be anywhere on the line.
+
+     newline-and-next: ^O
+             Causes the current input line to be processed by the shell, and
+             the next line from history becomes the current line.  This is
+             only useful after an uupp--hhiissttoorryy or sseeaarrcchh--hhiissttoorryy.
+
+     no-op: QUIT
+             This does nothing.
+
+     prev-hist-word: [_n] ^[., ^[_
+             The last (_nth) word of the previous command is inserted at the
+             cursor.
+
+     quote: ^^
+             The following character is taken literally rather than as an
+             editing command.
+
+     redraw:
+             Reprints the prompt string and the current input line.
+
+     search-character-backward: [_n] ^[^]
+             Search backward in the current line for the _nth occurrence of the
+             next character typed.
+
+     search-character-forward: [_n] ^]
+             Search forward in the current line for the _nth occurrence of the
+             next character typed.
+
+     search-history: ^R
+             Enter incremental search mode.  The internal history list is
+             searched backwards for commands matching the input.  An initial
+             ‘^’ in the search string anchors the search.  The abort key will
+             leave search mode.  Other commands will be executed after leaving
+             search mode.  Successive sseeaarrcchh--hhiissttoorryy commands continue
+             searching backward to the next previous occurrence of the
+             pattern.  The history buffer retains only a finite number of
+             lines; the oldest are discarded as necessary.
+
+     set-mark-command: ^[⟨space⟩
+             Set the mark at the cursor position.
+
+     transpose-chars: ^T
+             If at the end of line, or if the ggmmaaccss option is set, this
+             exchanges the two previous characters; otherwise, it exchanges
+             the previous and current characters and moves the cursor one
+             character to the right.
+
+     up-history: [_n] ^P, ^XA
+             Scrolls the history buffer backward _n lines (earlier).
+
+     upcase-word: [_n] ^[U, ^[u
+             Uppercase the next _n words.
+
+     quote: ^V
+             Synonym for ^^.
+
+     yank: ^Y
+             Inserts the most recently killed text string at the current
+             cursor position.
+
+     yank-pop: ^[y
+             Immediately after a yyaannkk, replaces the inserted text string with
+             the next previously killed text string.
+
+     The following editing commands lack default bindings but can be used with
+     the bbiinndd command:
+
+     kill-region
+             Deletes the input between the cursor and the mark.
+

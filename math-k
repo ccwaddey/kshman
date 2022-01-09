@@ -1,0 +1,120 @@
+   AArriitthhmmeettiicc eexxpprreessssiioonnss
+     Integer arithmetic expressions can be used with the lleett command, inside
+     $((..)) expressions, inside array references (e.g. _n_a_m_e[_e_x_p_r]), as
+     numeric arguments to the tteesstt command, and as the value of an assignment
+     to an integer parameter.
+
+     Expressions may contain alpha-numeric parameter identifiers, array
+     references, and integer constants and may be combined with the following
+     C operators (listed and grouped in increasing order of precedence):
+
+     Unary operators:
+
+           + - ! ~ ++ --
+
+     Binary operators:
+
+           ,
+           = *= /= %= += -= <<= >>= &= ^= |=
+           ||
+           &&
+           |
+           ^
+           &
+           == !=
+           < <= >= >
+           << >>
+           + -
+           * / %
+
+     Ternary operators:
+
+           ?: (precedence is immediately higher than assignment)
+
+     Grouping operators:
+
+           ( )
+
+     A parameter that is NULL or unset evaluates to 0.  Integer constants may
+     be specified with arbitrary bases using the notation _b_a_s_e#_n_u_m_b_e_r, where
+     _b_a_s_e is a decimal integer specifying the base, and _n_u_m_b_e_r is a number in
+     the specified base.  Additionally, integers may be prefixed with ‘0X’ or
+     ‘0x’ (specifying base 16) or ‘0’ (base 8) in all forms of arithmetic
+     expressions, except as numeric arguments to the tteesstt command.
+
+     The operators are evaluated as follows:
+
+           unary +
+                   Result is the argument (included for completeness).
+
+           unary -
+                   Negation.
+
+           !       Logical NOT; the result is 1 if argument is zero, 0 if not.
+
+           ~       Arithmetic (bit-wise) NOT.
+
+           ++      Increment; must be applied to a parameter (not a literal or
+                   other expression).  The parameter is incremented by 1.
+                   When used as a prefix operator, the result is the
+                   incremented value of the parameter; when used as a postfix
+                   operator, the result is the original value of the
+                   parameter.
+
+           --      Similar to ++++, except the parameter is decremented by 1.
+
+           ,       Separates two arithmetic expressions; the left-hand side is
+                   evaluated first, then the right.  The result is the value
+                   of the expression on the right-hand side.
+
+           =       Assignment; the variable on the left is set to the value on
+                   the right.
+
+           *= /= += -= <<= >>= &= ^= |=
+                   Assignment operators.  ⟨_v_a_r⟩⟨_o_p⟩=⟨_e_x_p_r⟩ is the same as
+                   ⟨_v_a_r⟩=⟨_v_a_r⟩⟨_o_p⟩⟨_e_x_p_r⟩, with any operator precedence in
+                   ⟨_e_x_p_r⟩ preserved.  For example, “var1 *= 5 + 3” is the same
+                   as specifying “var1 = var1 * (5 + 3)”.
+
+           ||      Logical OR; the result is 1 if either argument is non-zero,
+                   0 if not.  The right argument is evaluated only if the left
+                   argument is zero.
+
+           &&      Logical AND; the result is 1 if both arguments are non-
+                   zero, 0 if not.  The right argument is evaluated only if
+                   the left argument is non-zero.
+
+           |       Arithmetic (bit-wise) OR.
+
+           ^       Arithmetic (bit-wise) XOR (exclusive-OR).
+
+           &       Arithmetic (bit-wise) AND.
+
+           ==      Equal; the result is 1 if both arguments are equal, 0 if
+                   not.
+
+           !=      Not equal; the result is 0 if both arguments are equal, 1
+                   if not.
+
+           <       Less than; the result is 1 if the left argument is less
+                   than the right, 0 if not.
+
+           <= >= >
+                   Less than or equal, greater than or equal, greater than.
+                   See <<.
+
+           << >>   Shift left (right); the result is the left argument with
+                   its bits shifted left (right) by the amount given in the
+                   right argument.
+
+           + - * /
+                   Addition, subtraction, multiplication, and division.
+
+           %       Remainder; the result is the remainder of the division of
+                   the left argument by the right.  The sign of the result is
+                   unspecified if either argument is negative.
+
+           ⟨_a_r_g_1⟩?⟨_a_r_g_2⟩:⟨_a_r_g_3⟩
+                   If ⟨_a_r_g_1⟩ is non-zero, the result is ⟨_a_r_g_2⟩; otherwise the
+                   result is ⟨_a_r_g_3⟩.
+
