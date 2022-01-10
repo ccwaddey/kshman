@@ -1,0 +1,244 @@
+   Command syntax
+     The shell begins parsing its input by breaking it into words.  Words,
+     which are sequences of characters, are delimited by unquoted whitespace
+     characters (space, tab, and newline) or meta-characters (<, >, |,
+     ;, (, ), and &).  Aside from delimiting words, spaces and tabs
+     are ignored, while newlines usually delimit commands.  The meta-
+     characters are used in building the following tokens: <, <&, <<,
+     >, >&, >>, etc. are used to specify redirections (see Input/output
+     redirection below); | is used to create pipelines; |& is used to
+     create co-processes (see Co-processes below); ; is used to separate
+     commands; & is used to create asynchronous pipelines; && and || are
+     used to specify conditional execution; ;; is used in case statements;
+     (( .. )) is used in arithmetic expressions; and lastly, ( .. ) is
+     used to create subshells.
+
+     Whitespace and meta-characters can be quoted individually using a
+     backslash (\), or in groups using double (") or single (') quotes.
+     The following characters are also treated specially by the shell and must
+     be quoted if they are to represent themselves: \, ", ', #, $,
+     `, ~, {, }, *, ?, and [.  The first three of these are the
+     above mentioned quoting characters (see Quoting below); #, if used at
+     the beginning of a word, introduces a comment  everything after the #
+     up to the nearest newline is ignored; $ is used to introduce parameter,
+     command, and arithmetic substitutions (see Substitution below); `
+     introduces an old-style command substitution (see Substitution below);
+     ~ begins a directory expansion (see Tilde expansion below); { and }
+     delimit csh(1)-style alternations (see Brace expansion below); and
+     finally, *, ?, and [ are used in file name generation (see File
+     name patterns below).
+
+     As words and tokens are parsed, the shell builds commands, of which there
+     are two basic types: simple-commands, typically programs that are
+     executed, and compound-commands, such as for and if statements, grouping
+     constructs, and function definitions.
+
+     A simple-command consists of some combination of parameter assignments
+     (see Parameters below), input/output redirections (see Input/output
+     redirections below), and command words; the only restriction is that
+     parameter assignments come before any command words.  The command words,
+     if any, define the command that is to be executed and its arguments.  The
+     command may be a shell built-in command, a function, or an external
+     command (i.e. a separate executable file that is located using the PATH
+     parameter; see Command execution below).
+
+     All command constructs have an exit status.  For external commands, this
+     is related to the status returned by wait(2) (if the command could not be
+     found, the exit status is 127; if it could not be executed, the exit
+     status is 126).  The exit status of other command constructs (built-in
+     commands, functions, compound-commands, pipelines, lists, etc.) are all
+     well-defined and are described where the construct is described.  The
+     exit status of a command consisting only of parameter assignments is that
+     of the last command substitution performed during the parameter
+     assignment or 0 if there were no command substitutions.
+
+     Commands can be chained together using the | token to form pipelines,
+     in which the standard output of each command but the last is piped (see
+     pipe(2)) to the standard input of the following command.  The exit status
+     of a pipeline is that of its last command, unless the pipefail option is
+     set.  A pipeline may be prefixed by the ! reserved word, which causes
+     the exit status of the pipeline to be logically complemented: if the
+     original status was 0, the complemented status will be 1; if the original
+     status was not 0, the complemented status will be 0.
+
+     Lists of commands can be created by separating pipelines by any of the
+     following tokens: &&, ||, &, |&, and ;.  The first two are for
+     conditional execution: cmd1 && cmd2 executes cmd2 only if the exit
+     status of cmd1 is zero; || is the opposite	 cmd2 is executed only if
+     the exit status of cmd1 is non-zero.  && and || have equal precedence
+     which is higher than that of &, |&, and ;, which also have equal
+     precedence.  The && and || operators are "left-associative".  For
+     example, both of these commands will print only "bar":
+
+	   $ false && echo foo || echo bar
+	   $ true || echo foo && echo bar
+
+     The & token causes the preceding command to be executed asynchronously;
+     that is, the shell starts the command but does not wait for it to
+     complete (the shell does keep track of the status of asynchronous
+     commands; see Job control below).	When an asynchronous command is
+     started when job control is disabled (i.e. in most scripts), the command
+     is started with signals SIGINT and SIGQUIT ignored and with input
+     redirected from /dev/null (however, redirections specified in the
+     asynchronous command have precedence).  The |& operator starts a co-
+     process which is a special kind of asynchronous process (see Co-processes
+     below).  A command must follow the && and || operators, while it need
+     not follow &, |&, or ;.  The exit status of a list is that of the
+     last command executed, with the exception of asynchronous lists, for
+     which the exit status is 0.
+
+     Compound commands are created using the following reserved words.	These
+     words are only recognized if they are unquoted and if they are used as
+     the first word of a command (i.e. they can't be preceded by parameter
+     assignments or redirections):
+
+	   case	  esac	     in	      until   ((   }
+	   do	  fi	     name     while   ))
+	   done	  for	     select   !	      [[
+	   elif	  function   then     (	      ]]
+	   else	  if	     time     )	      {
+
+     Note: Some shells (but not this one) execute control structure commands
+     in a subshell when one or more of their file descriptors are redirected,
+     so any environment changes inside them may fail.  To be portable, the
+     exec statement should be used instead to redirect file descriptors before
+     the control structure.
+
+     In the following compound command descriptions, command lists (denoted as
+     list) that are followed by reserved words must end with a semicolon, a
+     newline, or a (syntactically correct) reserved word.  For example, the
+     following are all valid:
+
+	   $ { echo foo; echo bar; }
+	   $ { echo foo; echo bar<newline> }
+	   $ { { echo foo; echo bar; } }
+
+     This is not valid:
+
+	   $ { echo foo; echo bar }
+
+     (list)  Execute list in a subshell.  There is no implicit way to pass
+	     environment changes from a subshell back to its parent.
+
+     { list; }
+	     Compound construct; list is executed, but not in a subshell.
+	     Note that { and } are reserved words, not meta-characters.
+
+     case word in [[(] pattern [| pattern] ...) list ;;] ... esac
+	     The case statement attempts to match word against a specified
+	     pattern; the list associated with the first successfully matched
+	     pattern is executed.  Patterns used in case statements are the
+	     same as those used for file name patterns except that the
+	     restrictions regarding . and / are dropped.  Note that any
+	     unquoted space before and after a pattern is stripped; any space
+	     within a pattern must be quoted.  Both the word and the patterns
+	     are subject to parameter, command, and arithmetic substitution,
+	     as well as tilde substitution.  For historical reasons, open and
+	     close braces may be used instead of in and esac e.g. case $foo {
+	     *) echo bar; }.  The exit status of a case statement is that of
+	     the executed list; if no list is executed, the exit status is
+	     zero.
+
+     for name [in [word ...]]; do list; done
+	     For each word in the specified word list, the parameter name is
+	     set to the word and list is executed.  If in is not used to
+	     specify a word list, the positional parameters ($1, $2, etc.) are
+	     used instead.  For historical reasons, open and close braces may
+	     be used instead of do and done e.g. for i; { echo $i; }.  The
+	     exit status of a for statement is the last exit status of list.
+	     If there are no items, list is not executed and the exit status
+	     is zero.
+
+     if list; then list; [elif list; then list;] ... [else list;] fi
+	     If the exit status of the first list is zero, the second list is
+	     executed; otherwise, the list following the elif, if any, is
+	     executed with similar consequences.  If all the lists following
+	     the if and elifs fail (i.e. exit with non-zero status), the list
+	     following the else is executed.  The exit status of an if
+	     statement is that of non-conditional list that is executed; if no
+	     non-conditional list is executed, the exit status is zero.
+
+     select name [in word ...]; do list; done
+	     The select statement provides an automatic method of presenting
+	     the user with a menu and selecting from it.  An enumerated list
+	     of the specified word(s) is printed on standard error, followed
+	     by a prompt (PS3: normally #?).  A number corresponding to one
+	     of the enumerated words is then read from standard input, name is
+	     set to the selected word (or unset if the selection is not
+	     valid), REPLY is set to what was read (leading/trailing space is
+	     stripped), and list is executed.  If a blank line (i.e. zero or
+	     more IFS characters) is entered, the menu is reprinted without
+	     executing list.
+
+	     When list completes, the enumerated list is printed if REPLY is
+	     NULL, the prompt is printed, and so on.  This process continues
+	     until an end-of-file is read, an interrupt is received, or a
+	     break statement is executed inside the loop.  If in word ... is
+	     omitted, the positional parameters are used (i.e. $1, $2, etc.).
+	     For historical reasons, open and close braces may be used instead
+	     of do and done e.g. select i; { echo $i; }.  The exit status of a
+	     select statement is zero if a break statement is used to exit the
+	     loop, non-zero otherwise.
+
+     until list; do list; done
+	     This works like while, except that the body is executed only
+	     while the exit status of the first list is non-zero.
+
+     while list; do list; done
+	     A while is a pre-checked loop.  Its body is executed as often as
+	     the exit status of the first list is zero.	 The exit status of a
+	     while statement is the last exit status of the list in the body
+	     of the loop; if the body is not executed, the exit status is
+	     zero.
+
+     function name { list; }
+	     Defines the function name (see Functions below).  Note that
+	     redirections specified after a function definition are performed
+	     whenever the function is executed, not when the function
+	     definition is executed.
+
+     name() command
+	     Mostly the same as function (see Functions below).
+
+     time [-p] [pipeline]
+	     The time reserved word is described in the Command execution
+	     section.
+
+     (( expression ))
+	     The arithmetic expression expression is evaluated; equivalent to
+	     let expression (see Arithmetic expressions and the let command,
+	     below).
+
+     [[ expression ]]
+	     Similar to the test and [ ... ] commands (described later), with
+	     the following exceptions:
+
+		     Field splitting and file name generation are not
+		       performed on arguments.
+
+		     The -a (AND) and -o (OR) operators are replaced with
+		       && and ||, respectively.
+
+		     Operators (e.g. -f, =, !) must be unquoted.
+
+		     The second operand of the != and = expressions are
+		       patterns (e.g. the comparison [[ foobar = f*r ]]
+		       succeeds).
+
+		     The < and > binary operators do not need to be
+		       quoted with the \ character.
+
+		     The single argument form of test, which tests if the
+		       argument has a non-zero length, is not valid; explicit
+		       operators must always be used e.g. instead of [ str ]
+		       use [[ -n str ]].
+
+		     Parameter, command, and arithmetic substitutions are
+		       performed as expressions are evaluated and lazy
+		       expression evaluation is used for the && and ||
+		       operators.  This means that in the following statement,
+		       $(< foo) is evaluated if and only if the file foo
+		       exists and is readable:
+
+			     $ [[ -r foo && $(< foo) = b*r ]]
+

@@ -1,0 +1,107 @@
+   Quoting
+     Quoting is used to prevent the shell from treating characters or words
+     specially.	 There are three methods of quoting.  First, \ quotes the
+     following character, unless it is at the end of a line, in which case
+     both the \ and the newline are stripped.  Second, a single quote (')
+     quotes everything up to the next single quote (this may span lines).
+     Third, a double quote (") quotes all characters, except $, ` and
+     \, up to the next unquoted double quote.  $ and ` inside double
+     quotes have their usual meaning (i.e. parameter, command, or arithmetic
+     substitution) except no field splitting is carried out on the results of
+     double-quoted substitutions.  If a \ inside a double-quoted string is
+     followed by \, $, `, or ", it is replaced by the second
+     character; if it is followed by a newline, both the \ and the newline
+     are stripped; otherwise, both the \ and the character following are
+     unchanged.
+
+   Aliases
+     There are two types of aliases: normal command aliases and tracked
+     aliases.  Command aliases are normally used as a short hand for a long or
+     often used command.  The shell expands command aliases (i.e. substitutes
+     the alias name for its value) when it reads the first word of a command.
+     An expanded alias is re-processed to check for more aliases.  If a
+     command alias ends in a space or tab, the following word is also checked
+     for alias expansion.  The alias expansion process stops when a word that
+     is not an alias is found, when a quoted word is found, or when an alias
+     word that is currently being expanded is found.
+
+     The following command aliases are defined automatically by the shell:
+
+	   autoload='typeset -fu'
+	   functions='typeset -f'
+	   hash='alias -t'
+	   history='fc -l'
+	   integer='typeset -i'
+	   local='typeset'
+	   login='exec login'
+	   nohup='nohup '
+	   r='fc -s'
+	   stop='kill -STOP'
+
+     Tracked aliases allow the shell to remember where it found a particular
+     command.  The first time the shell does a path search for a command that
+     is marked as a tracked alias, it saves the full path of the command.  The
+     next time the command is executed, the shell checks the saved path to see
+     that it is still valid, and if so, avoids repeating the path search.
+     Tracked aliases can be listed and created using alias -t.	Note that
+     changing the PATH parameter clears the saved paths for all tracked
+     aliases.  If the trackall option is set (i.e. set -o trackall or set -h),
+     the shell tracks all commands.  This option is set automatically for non-
+     interactive shells.  For interactive shells, only the following commands
+     are automatically tracked: cat(1), cc(1), chmod(1), cp(1), date(1),
+     ed(1), emacs, grep(1), ls(1), mail(1), make(1), mv(1), pr(1), rm(1),
+     sed(1), sh(1), vi(1), and who(1).
+
+   Substitution
+     The first step the shell takes in executing a simple-command is to
+     perform substitutions on the words of the command.	 There are three kinds
+     of substitution: parameter, command, and arithmetic.  Parameter
+     substitutions, which are described in detail in the next section, take
+     the form $name or ${...}; command substitutions take the form $(command)
+     or `command`; and arithmetic substitutions take the form $((expression)).
+
+     If a substitution appears outside of double quotes, the results of the
+     substitution are generally subject to word or field splitting according
+     to the current value of the IFS parameter.	 The IFS parameter specifies a
+     list of characters which are used to break a string up into several
+     words; any characters from the set space, tab, and newline that appear in
+     the IFS characters are called IFS whitespace.  Sequences of one or more
+     IFS whitespace characters, in combination with zero or one non-IFS
+     whitespace characters, delimit a field.  As a special case, leading and
+     trailing IFS whitespace is stripped (i.e. no leading or trailing empty
+     field is created by it); leading non-IFS whitespace does create an empty
+     field.
+
+     Example: If IFS is set to <space>:, and VAR is set to
+     <space>A<space>:<space><space>B::D, the substitution for $VAR results
+     in four fields: A, B,  (an empty field), and D.  Note that if the
+     IFS parameter is set to the NULL string, no field splitting is done; if
+     the parameter is unset, the default value of space, tab, and newline is
+     used.
+
+     Also, note that the field splitting applies only to the immediate result
+     of the substitution.  Using the previous example, the substitution for
+     $VAR:E results in the fields: A, B, , and D:E, not A, B, ,
+     D, and E.	This behavior is POSIX compliant, but incompatible with
+     some other shell implementations which do field splitting on the word
+     which contained the substitution or use IFS as a general whitespace
+     delimiter.
+
+     The results of substitution are, unless otherwise specified, also subject
+     to brace expansion and file name expansion (see the relevant sections
+     below).
+
+     A command substitution is replaced by the output generated by the
+     specified command, which is run in a subshell.  For $(command)
+     substitutions, normal quoting rules are used when command is parsed;
+     however, for the `command` form, a \ followed by any of $, `, or
+     \ is stripped (a \ followed by any other character is unchanged).	As
+     a special case in command substitutions, a command of the form <file is
+     interpreted to mean substitute the contents of file.  Note that $(< foo)
+     has the same effect as $(cat foo), but it is carried out more efficiently
+     because no process is started.
+
+     Arithmetic substitutions are replaced by the value of the specified
+     expression.  For example, the command echo $((2+3*4)) prints 14.  See
+     Arithmetic expressions for a description of an expression.
+
