@@ -17,12 +17,22 @@
 
 #include <stdio.h>
 
+extern char **environ;
+
 int
 main(int argc, char *argv[]) {
 	int i;
 
-	printf("%d:\n", argc);
+	printf("argc = %d:\n", argc);
 	for (i = 0; i < argc; ++i)
 		printf("%s\n", argv[i]);
+
+	printf("\nenviron:\n");
+	if (environ != NULL) {
+		char **curenv = environ;
+		while (*curenv != NULL)
+			printf("%s\n", *curenv++);
+	}
+
 	return 0;
 }
