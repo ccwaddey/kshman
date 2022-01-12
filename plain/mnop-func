@@ -1,0 +1,1139 @@
+   Functions
+     Functions are defined using either Korn shell function function-name
+     syntax or the Bourne/POSIX shell function-name() syntax (see below for
+     the difference between the two forms).  Functions are like .-scripts
+     (i.e. scripts sourced using the . built-in) in that they are executed
+     in the current environment.  However, unlike .-scripts, shell arguments
+     (i.e. positional parameters $1, $2, etc.) are never visible inside them.
+     When the shell is determining the location of a command, functions are
+     searched after special built-in commands, before regular and non-regular
+     built-ins, and before the PATH is searched.
+
+     An existing function may be deleted using unset -f function-name.	A list
+     of functions can be obtained using typeset +f and the function
+     definitions can be listed using typeset -f.  The autoload command (which
+     is an alias for typeset -fu) may be used to create undefined functions:
+     when an undefined function is executed, the shell searches the path
+     specified in the FPATH parameter for a file with the same name as the
+     function, which, if found, is read and executed.  If after executing the
+     file the named function is found to be defined, the function is executed;
+     otherwise, the normal command search is continued (i.e. the shell
+     searches the regular built-in command table and PATH).  Note that if a
+     command is not found using PATH, an attempt is made to autoload a
+     function using FPATH (this is an undocumented feature of the original
+     Korn shell).
+
+     Functions can have two attributes, trace and export, which can be set
+     with typeset -ft and typeset -fx, respectively.  When a traced function
+     is executed, the shell's xtrace option is turned on for the function's
+     duration; otherwise, the xtrace option is turned off.  The export
+     attribute of functions is currently not used.  In the original Korn
+     shell, exported functions are visible to shell scripts that are executed.
+
+     Since functions are executed in the current shell environment, parameter
+     assignments made inside functions are visible after the function
+     completes.	 If this is not the desired effect, the typeset command can be
+     used inside a function to create a local parameter.  Note that special
+     parameters (e.g. $$, $!) can't be scoped in this way.
+
+     The exit status of a function is that of the last command executed in the
+     function.	A function can be made to finish immediately using the return
+     command; this may also be used to explicitly specify the exit status.
+
+     Functions defined with the function reserved word are treated differently
+     in the following ways from functions defined with the () notation:
+
+       The $0 parameter is set to the name of the function (Bourne-style
+	 functions leave $0 untouched).
+
+       Parameter assignments preceding function calls are not kept in the
+	 shell environment (executing Bourne-style functions will keep
+	 assignments).
+
+       OPTIND is saved/reset and restored on entry and exit from the
+	 function so getopts can be used properly both inside and outside the
+	 function (Bourne-style functions leave OPTIND untouched, so using
+	 getopts inside a function interferes with using getopts outside the
+	 function).
+
+   POSIX mode
+     The shell is intended to be POSIX compliant; however, in some cases,
+     POSIX behaviour is contrary either to the original Korn shell behaviour
+     or to user convenience.  How the shell behaves in these cases is
+     determined by the state of the posix option (set -o posix).  If it is on,
+     the POSIX behaviour is followed; otherwise, it is not.  The posix option
+     is set automatically when the shell starts up if the environment contains
+     the POSIXLY_CORRECT parameter.  The shell can also be compiled so that it
+     is in POSIX mode by default; however, this is usually not desirable.
+
+     The following is a list of things that are affected by the state of the
+     posix option:
+
+       kill -l output.	In POSIX mode, only signal names are listed (in a
+	 single line); in non-POSIX mode, signal numbers, names, and
+	 descriptions are printed (in columns).
+
+       echo options.  In POSIX mode, -e and -E are not treated as options,
+	 but printed like other arguments; in non-POSIX mode, these options
+	 control the interpretation of backslash sequences.
+
+       fg exit status.	In POSIX mode, the exit status is 0 if no errors
+	 occur; in non-POSIX mode, the exit status is that of the last
+	 foregrounded job.
+
+       eval exit status.  If eval gets to see an empty command (i.e. eval
+	 `false`), its exit status in POSIX mode will be 0.  In non-POSIX
+	 mode, it will be the exit status of the last command substitution
+	 that was done in the processing of the arguments to eval (or 0 if
+	 there were no command substitutions).
+
+       getopts.	 In POSIX mode, options must start with a -; in non-POSIX
+	 mode, options can start with either - or +.
+
+       Brace expansion (also known as alternation).  In POSIX mode, brace
+	 expansion is disabled; in non-POSIX mode, brace expansion is enabled.
+	 Note that set -o posix (or setting the POSIXLY_CORRECT parameter)
+	 automatically turns the braceexpand option off; however, it can be
+	 explicitly turned on later.
+
+       set -.  In POSIX mode, this does not clear the verbose or xtrace
+	 options; in non-POSIX mode, it does.
+
+       set exit status.	 In POSIX mode, the exit status of set is 0 if there
+	 are no errors; in non-POSIX mode, the exit status is that of any
+	 command substitutions performed in generating the set command.	 For
+	 example, set -- `false`; echo $? prints 0 in POSIX mode, 1 in non-
+	 POSIX mode.  This construct is used in most shell scripts that use
+	 the old getopt(1) command.
+
+       Argument expansion of the alias, export, readonly, and typeset
+	 commands.  In POSIX mode, normal argument expansion is done; in non-
+	 POSIX mode, field splitting, file globbing, brace expansion, and
+	 (normal) tilde expansion are turned off, while assignment tilde
+	 expansion is turned on.
+
+       Signal specification.  In POSIX mode, signals can be specified as
+	 digits, only if signal numbers match POSIX values (i.e. HUP=1, INT=2,
+	 QUIT=3, ABRT=6, KILL=9, ALRM=14, and TERM=15); in non-POSIX mode,
+	 signals can always be digits.
+
+       Alias expansion.	 In POSIX mode, alias expansion is only carried out
+	 when reading command words; in non-POSIX mode, alias expansion is
+	 carried out on any word following an alias that ended in a space.
+	 For example, the following for loop uses parameter i in POSIX mode
+	 and j in non-POSIX mode:
+
+	       alias a='for ' i='j'
+	       a i in 1 2; do echo i=$i j=$j; done
+
+       test.  In POSIX mode, the expression -t (preceded by some number of
+	 ! arguments) is always true as it is a non-zero length string; in
+	 non-POSIX mode, it tests if file descriptor 1 is a tty(4) (i.e. the
+	 fd argument to the -t test may be left out and defaults to 1).
+
+   Strict Bourne shell mode
+     When the sh option is enabled (see the set command), ksh will behave like
+     sh(1) in the following ways:
+
+       The parameter $_ is not set to:
+
+	 -   the expanded alias' full program path after entering commands
+	     that are tracked aliases
+	 -   the last argument on the command line after entering external
+	     commands
+	 -   the file that changed when MAILPATH is set to monitor a mailbox
+
+       File descriptors are left untouched when executing exec with no
+	 arguments.
+
+       Backslash-escaped special characters are not substituted in PS1.
+
+       Sequences of ((...)) are not interpreted as arithmetic expressions.
+
+   Command execution
+     After evaluation of command-line arguments, redirections, and parameter
+     assignments, the type of command is determined: a special built-in, a
+     function, a regular built-in, or the name of a file to execute found
+     using the PATH parameter.	The checks are made in the above order.
+     Special built-in commands differ from other commands in that the PATH
+     parameter is not used to find them, an error during their execution can
+     cause a non-interactive shell to exit, and parameter assignments that are
+     specified before the command are kept after the command completes.	 Just
+     to confuse things, if the posix option is turned off (see the set command
+     below), some special commands are very special in that no field
+     splitting, file globbing, brace expansion, nor tilde expansion is
+     performed on arguments that look like assignments.	 Regular built-in
+     commands are different only in that the PATH parameter is not used to
+     find them.
+
+     The original ksh and POSIX differ somewhat in which commands are
+     considered special or regular:
+
+     POSIX special commands
+
+     ., :, break, continue, eval, exec, exit, export, readonly, return, set,
+     shift, times, trap, unset
+
+     Additional ksh special commands
+
+     builtin, typeset
+
+     Very special commands (when POSIX mode is off)
+
+     alias, readonly, set, typeset
+
+     POSIX regular commands
+
+     alias, bg, cd, command, false, fc, fg, getopts, jobs, kill, pwd, read,
+     true, umask, unalias, wait
+
+     Additional ksh regular commands
+
+     [, echo, let, print, suspend, test, ulimit, whence
+
+     Once the type of command has been determined, any command-line parameter
+     assignments are performed and exported for the duration of the command.
+
+     The following describes the special and regular built-in commands:
+
+     . file [arg ...]
+	     Execute the commands in file in the current environment.  The
+	     file is searched for in the directories of PATH.  If arguments
+	     are given, the positional parameters may be used to access them
+	     while file is being executed.  If no arguments are given, the
+	     positional parameters are those of the environment the command is
+	     used in.
+
+     : [...]
+	     The null command.	Exit status is set to zero.
+
+     alias [-d | -t [-r] | +-x] [-p] [+] [name [=value] ...]
+	     Without arguments, alias lists all aliases.  For any name without
+	     a value, the existing alias is listed.  Any name with a value
+	     defines an alias (see Aliases above).
+
+	     When listing aliases, one of two formats is used.	Normally,
+	     aliases are listed as name=value, where value is quoted.  If
+	     options were preceded with +, or a lone + is given on the
+	     command line, only name is printed.
+
+	     The -d option causes directory aliases, which are used in tilde
+	     expansion, to be listed or set (see Tilde expansion above).
+
+	     If the -p option is used, each alias is prefixed with the string
+	     alias.
+
+	     The -t option indicates that tracked aliases are to be listed/set
+	     (values specified on the command line are ignored for tracked
+	     aliases).	The -r option indicates that all tracked aliases are
+	     to be reset.
+
+	     The -x option sets (+x clears) the export attribute of an alias
+	     or, if no names are given, lists the aliases with the export
+	     attribute (exporting an alias has no effect).
+
+     bg [job ...]
+	     Resume the specified stopped job(s) in the background.  If no
+	     jobs are specified, %+ is assumed.	 See Job control below for
+	     more information.
+
+     bind [-l]
+	     The current bindings are listed.  If the -l flag is given, bind
+	     instead lists the names of the functions to which keys may be
+	     bound.  See Emacs editing mode for more information.
+
+     bind [-m] string=[substitute] ...
+     bind string=[editing-command] ...
+	     In Emacs editing mode, the specified editing command is bound to
+	     the given string.	Future input of the string will cause the
+	     editing command to be immediately invoked.	 Bindings have no
+	     effect in Vi editing mode.
+
+	     If the -m flag is given, the specified input string will
+	     afterwards be immediately replaced by the given substitute
+	     string, which may contain editing commands.  Control characters
+	     may be written using caret notation.  For example, ^X represents
+	     Control-X.
+
+	     If a certain character occurs as the first character of any bound
+	     multi-character string sequence, that character becomes a command
+	     prefix character.	Any character sequence that starts with a
+	     command prefix character but that is not bound to a command or
+	     substitute is implicitly considered as bound to the error
+	     command.  By default, two command prefix characters exist: Escape
+	     (^[) and Control-X (^X).
+
+	     The following default bindings show how the arrow keys on an ANSI
+	     terminal or xterm are bound (of course some escape sequences
+	     won't work out quite this nicely):
+
+		   bind '^[[A'=up-history
+		   bind '^[[B'=down-history
+		   bind '^[[C'=forward-char
+		   bind '^[[D'=backward-char
+
+     break [level]
+	     Exit the levelth inner-most for, select, until, or while loop.
+	     level defaults to 1.
+
+     builtin command [arg ...]
+	     Execute the built-in command command.
+
+     cd [-LP] [dir]
+	     Set the working directory to dir.	If the parameter CDPATH is
+	     set, it lists the search path for the directory containing dir.
+	     A NULL path or . means the current directory.  If dir is found
+	     in any component of the CDPATH search path other than the NULL
+	     path, the name of the new working directory will be written to
+	     standard output.  If dir is missing, the home directory HOME is
+	     used.  If dir is -, the previous working directory is used (see
+	     the OLDPWD parameter).
+
+	     If the -L option (logical path) is used or if the physical option
+	     isn't set (see the set command below), references to .. in dir
+	     are relative to the path used to get to the directory.  If the -P
+	     option (physical path) is used or if the physical option is set,
+	     .. is relative to the filesystem directory tree.  The PWD and
+	     OLDPWD parameters are updated to reflect the current and old
+	     working directory, respectively.
+
+     cd [-LP] old new
+	     The string new is substituted for old in the current directory,
+	     and the shell attempts to change to the new directory.
+
+     command [-pVv] cmd [arg ...]
+	     If neither the -v nor -V option is given, cmd is executed exactly
+	     as if command had not been specified, with two exceptions:
+	     firstly, cmd cannot be an alias or a shell function; and
+	     secondly, special built-in commands lose their specialness (i.e.
+	     redirection and utility errors do not cause the shell to exit,
+	     and command assignments are not permanent).
+
+	     If the -p option is given, a default search path is used instead
+	     of the current value of PATH (the actual value of the default
+	     path is system dependent: on POSIX-ish systems, it is the value
+	     returned by getconf PATH).	 Nevertheless, reserved words,
+	     aliases, shell functions, and builtin commands are still found
+	     before external commands.
+
+	     If the -v option is given, instead of executing cmd, information
+	     about what would be executed is given (and the same is done for
+	     arg ...).	For special and regular built-in commands and
+	     functions, their names are simply printed; for aliases, a command
+	     that defines them is printed; and for commands found by searching
+	     the PATH parameter, the full path of the command is printed.  If
+	     no command is found (i.e. the path search fails), nothing is
+	     printed and command exits with a non-zero status.	The -V option
+	     is like the -v option, except it is more verbose.
+
+     continue [level]
+	     Jumps to the beginning of the levelth inner-most for, select,
+	     until, or while loop.  level defaults to 1.
+
+     echo [-Een] [arg ...]
+	     Prints its arguments (separated by spaces) followed by a newline,
+	     to the standard output.  The newline is suppressed if any of the
+	     arguments contain the backslash sequence \c.  See the print
+	     command below for a list of other backslash sequences that are
+	     recognized.
+
+	     The options are provided for compatibility with BSD shell
+	     scripts.  The -n option suppresses the trailing newline, -e
+	     enables backslash interpretation (a no-op, since this is normally
+	     done), and -E suppresses backslash interpretation.	 If the posix
+	     option is set, only the first argument is treated as an option,
+	     and only if it is exactly -n.
+
+     eval command ...
+	     The arguments are concatenated (with spaces between them) to form
+	     a single string which the shell then parses and executes in the
+	     current environment.
+
+     exec [command [arg ...]]
+	     The command is executed without forking, replacing the shell
+	     process.
+
+	     If no command is given except for I/O redirection, the I/O
+	     redirection is permanent and the shell is not replaced.  Any file
+	     descriptors greater than 2 which are opened or dup(2)'d in this
+	     way are not made available to other executed commands (i.e.
+	     commands that are not built-in to the shell).  Note that the
+	     Bourne shell differs here; it does pass these file descriptors
+	     on.
+
+     exit [status]
+	     The shell exits with the specified exit status.  If status is not
+	     specified, the exit status is the current value of the $?
+	     parameter.
+
+     export [-p] [parameter[=value]]
+	     Sets the export attribute of the named parameters.	 Exported
+	     parameters are passed in the environment to executed commands.
+	     If values are specified, the named parameters are also assigned.
+
+	     If no parameters are specified, the names of all parameters with
+	     the export attribute are printed one per line, unless the -p
+	     option is used, in which case export commands defining all
+	     exported parameters, including their values, are printed.
+
+     false   A command that exits with a non-zero status.
+
+     fc [-e editor | -l [-n]] [-r] [first [last]]
+	     Fix command.  first and last select commands from the history.
+	     Commands can be selected by history number or a string specifying
+	     the most recent command starting with that string.	 The -l option
+	     lists the command on standard output, and -n inhibits the default
+	     command numbers.  The -r option reverses the order of the list.
+	     Without -l, the selected commands are edited by the editor
+	     specified with the -e option, or if no -e is specified, the
+	     editor specified by the FCEDIT parameter (if this parameter is
+	     not set, /bin/ed is used), and then executed by the shell.
+
+     fc -s [-g] [old=new] [prefix]
+	     Re-execute the most recent command beginning with prefix, or the
+	     previous command if no prefix is specified, performing the
+	     optional substitution of old with new.  If -g is specified, all
+	     occurrences of old are replaced with new.	The editor is not
+	     invoked when the -s flag is used.	The obsolescent equivalent -e
+	     - is also accepted.  This command is usually accessed with the
+	     predefined alias r='fc -s'.
+
+     fg [job ...]
+	     Resume the specified job(s) in the foreground.  If no jobs are
+	     specified, %+ is assumed.	See Job control below for more
+	     information.
+
+     getopts optstring name [arg ...]
+	     Used by shell procedures to parse the specified arguments (or
+	     positional parameters, if no arguments are given) and to check
+	     for legal options.	 optstring contains the option letters that
+	     getopts is to recognize.  If a letter is followed by a colon, the
+	     option is expected to have an argument.  Options that do not take
+	     arguments may be grouped in a single argument.  If an option
+	     takes an argument and the option character is not the last
+	     character of the argument it is found in, the remainder of the
+	     argument is taken to be the option's argument; otherwise, the
+	     next argument is the option's argument.
+
+	     Each time getopts is invoked, it places the next option in the
+	     shell parameter name and the index of the argument to be
+	     processed by the next call to getopts in the shell parameter
+	     OPTIND.  If the option was introduced with a +, the option
+	     placed in name is prefixed with a +.  When an option requires
+	     an argument, getopts places it in the shell parameter OPTARG.
+
+	     When an illegal option or a missing option argument is
+	     encountered, a question mark or a colon is placed in name
+	     (indicating an illegal option or missing argument, respectively)
+	     and OPTARG is set to the option character that caused the
+	     problem.  Furthermore, if optstring does not begin with a colon,
+	     a question mark is placed in name, OPTARG is unset, and an error
+	     message is printed to standard error.
+
+	     When the end of the options is encountered, getopts exits with a
+	     non-zero exit status.  Options end at the first (non-option
+	     argument) argument that does not start with a -, or when a --
+	     argument is encountered.
+
+	     Option parsing can be reset by setting OPTIND to 1 (this is done
+	     automatically whenever the shell or a shell procedure is
+	     invoked).
+
+	     Warning: Changing the value of the shell parameter OPTIND to a
+	     value other than 1, or parsing different sets of arguments
+	     without resetting OPTIND, may lead to unexpected results.
+
+	     The following code fragment shows how one might process the
+	     arguments for a command that can take the option -a and the
+	     option -o, which requires an argument.
+
+		   while getopts ao: name
+		   do
+			   case $name in
+			   a)	   flag=1 ;;
+			   o)	   oarg=$OPTARG ;;
+			   ?)	   echo "Usage: ..."; exit 2 ;;
+			   esac
+		   done
+		   shift $(($OPTIND - 1))
+		   echo "Non-option arguments: " "$@"
+
+     hash [-r] [name ...]
+	     Without arguments, any hashed executable command pathnames are
+	     listed.  The -r option causes all hashed commands to be removed
+	     from the hash table.  Each name is searched as if it were a
+	     command name and added to the hash table if it is an executable
+	     command.
+
+     jobs [-lnp] [job ...]
+	     Display information about the specified job(s); if no jobs are
+	     specified, all jobs are displayed.	 The -n option causes
+	     information to be displayed only for jobs that have changed state
+	     since the last notification.  If the -l option is used, the
+	     process ID of each process in a job is also listed.  The -p
+	     option causes only the process group of each job to be printed.
+	     See Job control below for the format of job and the displayed
+	     job.
+
+     kill [-s signame | -signum | -signame] { job | pid | pgrp } ...
+	     Send the specified signal to the specified jobs, process IDs, or
+	     process groups.  If no signal is specified, the TERM signal is
+	     sent.  If a job is specified, the signal is sent to the job's
+	     process group.  See Job control below for the format of job.
+
+     kill -l [exit-status ...]
+	     Print the signal name corresponding to exit-status.  If no
+	     arguments are specified, a list of all the signals, their
+	     numbers, and a short description of them are printed.
+
+     let [expression ...]
+	     Each expression is evaluated (see Arithmetic expressions above).
+	     If all expressions are successfully evaluated, the exit status is
+	     0 (1) if the last expression evaluated to non-zero (zero).	 If an
+	     error occurs during the parsing or evaluation of an expression,
+	     the exit status is greater than 1.	 Since expressions may need to
+	     be quoted, (( expr )) is syntactic sugar for let "expr".
+
+     print [-nprsu[n] | -R [-en]] [argument ...]
+	     print prints its arguments on the standard output, separated by
+	     spaces and terminated with a newline.  The -n option suppresses
+	     the newline.  By default, certain C escapes are translated.
+	     These include \b, \f, \n, \r, \t, \v, and \0###
+	     (# is an octal digit, of which there may be 0 to 3).  \c is
+	     equivalent to using the -n option.	 \ expansion may be
+	     inhibited with the -r option.  The -s option prints to the
+	     history file instead of standard output; the -u option prints to
+	     file descriptor n (n defaults to 1 if omitted); and the -p option
+	     prints to the co-process (see Co-processes above).
+
+	     The -R option is used to emulate, to some degree, the BSD echo(1)
+	     command, which does not process \ sequences unless the -e
+	     option is given.  As above, the -n option suppresses the trailing
+	     newline.
+
+     pwd [-LP]
+	     Print the present working directory.  If the -L option is used or
+	     if the physical option isn't set (see the set command below), the
+	     logical path is printed (i.e. the path used to cd to the current
+	     directory).  If the -P option (physical path) is used or if the
+	     physical option is set, the path determined from the filesystem
+	     (by following .. directories to the root directory) is printed.
+
+     read [-prsu[n]] [parameter ...]
+	     Reads a line of input from the standard input, separates the line
+	     into fields using the IFS parameter (see Substitution above), and
+	     assigns each field to the specified parameters.  If there are
+	     more parameters than fields, the extra parameters are set to
+	     NULL, or alternatively, if there are more fields than parameters,
+	     the last parameter is assigned the remaining fields (inclusive of
+	     any separating spaces).  If no parameters are specified, the
+	     REPLY parameter is used.  If the input line ends in a backslash
+	     and the -r option was not used, the backslash and the newline are
+	     stripped and more input is read.  If no input is read, read exits
+	     with a non-zero status.
+
+	     The first parameter may have a question mark and a string
+	     appended to it, in which case the string is used as a prompt
+	     (printed to standard error before any input is read) if the input
+	     is a tty(4) (e.g. read nfoo?'number of foos: ').
+
+	     The -un and -p options cause input to be read from file
+	     descriptor n (n defaults to 0 if omitted) or the current co-
+	     process (see Co-processes above for comments on this),
+	     respectively.  If the -s option is used, input is saved to the
+	     history file.
+
+     readonly [-p] [parameter [=value] ...]
+	     Sets the read-only attribute of the named parameters.  If values
+	     are given, parameters are set to them before setting the
+	     attribute.	 Once a parameter is made read-only, it cannot be
+	     unset and its value cannot be changed.
+
+	     If no parameters are specified, the names of all parameters with
+	     the read-only attribute are printed one per line, unless the -p
+	     option is used, in which case readonly commands defining all
+	     read-only parameters, including their values, are printed.
+
+     return [status]
+	     Returns from a function or . script, with exit status status.  If
+	     no status is given, the exit status of the last executed command
+	     is used.  If used outside of a function or . script, it has the
+	     same effect as exit.  Note that ksh treats both profile and ENV
+	     files as . scripts, while the original Korn shell only treats
+	     profiles as . scripts.
+
+     set [+-abCefhkmnpsuvXx] [+-o option] [+-A name] [--] [arg ...]
+	     The set command can be used to set (-) or clear (+) shell
+	     options, set the positional parameters, or set an array
+	     parameter.	 Options can be changed using the +-o option syntax,
+	     where option is the long name of an option, or using the +-letter
+	     syntax, where letter is the option's single letter name (not all
+	     options have a single letter name).  The following table lists
+	     both option letters (if they exist) and long names along with a
+	     description of what the option does:
+
+	     -A name	      Sets the elements of the array parameter name to
+			      arg ... If -A is used, the array is reset (i.e.
+			      emptied) first; if +A is used, the first N
+			      elements are set (where N is the number of
+			      arguments); the rest are left untouched.
+
+	     -a | allexport   All new parameters are created with the export
+			      attribute.
+
+	     -b | notify      Print job notification messages asynchronously,
+			      instead of just before the prompt.  Only used if
+			      job control is enabled (-m).
+
+	     -C | noclobber   Prevent > redirection from overwriting existing
+			      files.  Instead, >| must be used to force an
+			      overwrite.
+
+	     -e | errexit     Exit (after executing the ERR trap) as soon as
+			      an error occurs or a command fails (i.e. exits
+			      with a non-zero status).	This does not apply to
+			      commands whose exit status is explicitly tested
+			      by a shell construct such as if, until, while,
+			      or ! statements.	For && or ||, only the status
+			      of the last command is tested.
+
+	     -f | noglob      Do not expand file name patterns.
+
+	     -h | trackall    Create tracked aliases for all executed commands
+			      (see Aliases above).  Enabled by default for
+			      non-interactive shells.
+
+	     -k | keyword     Parameter assignments are recognized anywhere in
+			      a command.
+
+	     -m | monitor     Enable job control (default for interactive
+			      shells).
+
+	     -n | noexec      Do not execute any commands.  Useful for
+			      checking the syntax of scripts (ignored if
+			      interactive).
+
+	     -p | privileged  The shell is a privileged shell.	It is set
+			      automatically if, when the shell starts, the
+			      real UID or GID does not match the effective UID
+			      (EUID) or GID (EGID), respectively.  See above
+			      for a description of what this means.
+
+	     -s | stdin	      If used when the shell is invoked, commands are
+			      read from standard input.	 Set automatically if
+			      the shell is invoked with no arguments.
+
+			      When -s is used with the set command it causes
+			      the specified arguments to be sorted before
+			      assigning them to the positional parameters (or
+			      to array name, if -A is used).
+
+	     -u | nounset     Referencing of an unset parameter is treated as
+			      an error, unless one of the -, +, or =
+			      modifiers is used.
+
+	     -v | verbose     Write shell input to standard error as it is
+			      read.
+
+	     -X | markdirs    Mark directories with a trailing / during file
+			      name generation.
+
+	     -x | xtrace      Print commands and parameter assignments when
+			      they are executed, preceded by the value of PS4.
+
+	     bgnice	      Background jobs are run with lower priority.
+
+	     braceexpand      Enable brace expansion (a.k.a. alternation).
+
+	     csh-history      Enables a subset of csh(1)-style history editing
+			      using the ! character.
+
+	     emacs	      Enable BRL emacs-like command-line editing
+			      (interactive shells only); see Emacs editing
+			      mode.
+
+	     gmacs	      Enable gmacs-like command-line editing
+			      (interactive shells only).  Currently identical
+			      to emacs editing except that transpose (^T) acts
+			      slightly differently.
+
+	     ignoreeof	      The shell will not (easily) exit when end-of-
+			      file is read; exit must be used.	To avoid
+			      infinite loops, the shell will exit if EOF is
+			      read 13 times in a row.
+
+	     interactive      The shell is an interactive shell.  This option
+			      can only be used when the shell is invoked.  See
+			      above for a description of what this means.
+
+	     login	      The shell is a login shell.  This option can
+			      only be used when the shell is invoked.  See
+			      above for a description of what this means.
+
+	     nohup	      Do not kill running jobs with a SIGHUP signal
+			      when a login shell exits.	 Currently set by
+			      default; this is different from the original
+			      Korn shell (which doesn't have this option, but
+			      does send the SIGHUP signal).
+
+	     nolog	      No effect.  In the original Korn shell, this
+			      prevents function definitions from being stored
+			      in the history file.
+
+	     physical	      Causes the cd and pwd commands to use physical
+			      (i.e. the filesystem's) .. directories instead
+			      of logical directories (i.e. the shell handles
+			      .., which allows the user to be oblivious of
+			      symbolic links to directories).  Clear by
+			      default.	Note that setting this option does not
+			      affect the current value of the PWD parameter;
+			      only the cd command changes PWD.	See the cd and
+			      pwd commands above for more details.
+
+	     pipefail	      The exit status of a pipeline is the exit status
+			      of the rightmost command in the pipeline that
+			      doesn't return 0, or 0 if all commands returned
+			      a 0 exit status.
+
+	     posix	      Enable POSIX mode.  See POSIX mode above.
+
+	     restricted	      The shell is a restricted shell.	This option
+			      can only be used when the shell is invoked.  See
+			      above for a description of what this means.
+
+	     sh		      Enable strict Bourne shell mode (see Strict
+			      Bourne shell mode above).
+
+	     vi		      Enable vi(1)-like command-line editing
+			      (interactive shells only).
+
+	     vi-esccomplete   In vi command-line editing, do command and file
+			      name completion when escape (^[) is entered in
+			      command mode.
+
+	     vi-show8	      Prefix characters with the eighth bit set with
+			      M-.  If this option is not set, characters in
+			      the range 128-160 are printed as is, which may
+			      cause problems.
+
+	     vi-tabcomplete   In vi command-line editing, do command and file
+			      name completion when tab (^I) is entered in
+			      insert mode.  This is the default.
+
+	     viraw	      No effect.  In the original Korn shell, unless
+			      viraw was set, the vi command-line mode would
+			      let the tty(4) driver do the work until ESC (^[)
+			      was entered.  ksh is always in viraw mode.
+
+	     These options can also be used upon invocation of the shell.  The
+	     current set of options (with single letter names) can be found in
+	     the parameter $-.	set -o with no option name will list all the
+	     options and whether each is on or off; set +o will print the
+	     current shell options in a form that can be reinput to the shell
+	     to achieve the same option settings.
+
+	     Remaining arguments, if any, are positional parameters and are
+	     assigned, in order, to the positional parameters (i.e. $1, $2,
+	     etc.).  If options end with -- and there are no remaining
+	     arguments, all positional parameters are cleared.	If no options
+	     or arguments are given, the values of all names are printed.  For
+	     unknown historical reasons, a lone - option is treated
+	     specially - it clears both the -x and -v options.
+
+     shift [number]
+	     The positional parameters number+1, number+2, etc. are renamed to
+	     1, 2, etc.	 number defaults to 1.
+
+     suspend
+	     Stops the shell as if it had received the suspend character from
+	     the terminal.  It is not possible to suspend a login shell unless
+	     the parent process is a member of the same terminal session but
+	     is a member of a different process group.	As a general rule, if
+	     the shell was started by another shell or via su(1), it can be
+	     suspended.
+
+     test expression
+     [ expression ]
+	     test evaluates the expression and returns zero status if true, 1
+	     if false, or greater than 1 if there was an error.	 It is
+	     normally used as the condition command of if and while
+	     statements.  Symbolic links are followed for all file expressions
+	     except -h and -L.
+
+	     The following basic expressions are available:
+
+	     -a file		file exists.
+
+	     -b file		file is a block special device.
+
+	     -c file		file is a character special device.
+
+	     -d file		file is a directory.
+
+	     -e file		file exists.
+
+	     -f file		file is a regular file.
+
+	     -G file		file's group is the shell's effective group
+				ID.
+
+	     -g file		file's mode has the setgid bit set.
+
+	     -h file		file is a symbolic link.
+
+	     -k file		file's mode has the sticky(8) bit set.
+
+	     -L file		file is a symbolic link.
+
+	     -O file		file's owner is the shell's effective user ID.
+
+	     -o option		Shell option is set (see the set command above
+				for a list of options).	 As a non-standard
+				extension, if the option starts with a !,
+				the test is negated; the test always fails if
+				option doesn't exist (so [ -o foo -o -o !foo ]
+				returns true if and only if option foo
+				exists).
+
+	     -p file		file is a named pipe.
+
+	     -r file		file exists and is readable.
+
+	     -S file		file is a unix(4)-domain socket.
+
+	     -s file		file is not empty.
+
+	     -t [fd]		File descriptor fd is a tty(4) device.	If the
+				posix option is not set, fd may be left out,
+				in which case it is taken to be 1 (the
+				behaviour differs due to the special POSIX
+				rules described above).
+
+	     -u file		file's mode has the setuid bit set.
+
+	     -w file		file exists and is writable.
+
+	     -x file		file exists and is executable.
+
+	     file1 -nt file2	file1 is newer than file2 or file1 exists and
+				file2 does not.
+
+	     file1 -ot file2	file1 is older than file2 or file2 exists and
+				file1 does not.
+
+	     file1 -ef file2	file1 is the same file as file2.
+
+	     string		string has non-zero length.
+
+	     -n string		string is not empty.
+
+	     -z string		string is empty.
+
+	     string = string	Strings are equal.
+
+	     string == string	Strings are equal.
+
+	     string != string	Strings are not equal.
+
+	     string > string	Strings compare greater than based on the
+				ASCII value of their characters.
+
+	     string < string	Strings compare less than based on the ASCII
+				value of their characters.
+
+	     number -eq number	Numbers compare equal.
+
+	     number -ne number	Numbers compare not equal.
+
+	     number -ge number	Numbers compare greater than or equal.
+
+	     number -gt number	Numbers compare greater than.
+
+	     number -le number	Numbers compare less than or equal.
+
+	     number -lt number	Numbers compare less than.
+
+	     The above basic expressions, in which unary operators have
+	     precedence over binary operators, may be combined with the
+	     following operators (listed in increasing order of precedence):
+
+		   expr -o expr		   Logical OR.
+		   expr -a expr		   Logical AND.
+		   ! expr		   Logical NOT.
+		   ( expr )		   Grouping.
+
+	     On operating systems not supporting /dev/fd/n devices (where n is
+	     a file descriptor number), the test command will attempt to fake
+	     it for all tests that operate on files (except the -e test).  For
+	     example, [ -w /dev/fd/2 ] tests if file descriptor 2 is writable.
+
+	     Note that some special rules are applied (courtesy of POSIX) if
+	     the number of arguments to test or [ ... ] is less than five: if
+	     leading ! arguments can be stripped such that only one argument
+	     remains then a string length test is performed (again, even if
+	     the argument is a unary operator); if leading ! arguments can
+	     be stripped such that three arguments remain and the second
+	     argument is a binary operator, then the binary operation is
+	     performed (even if the first argument is a unary operator,
+	     including an unstripped !).
+
+	     Note: A common mistake is to use if [ $foo = bar ] which fails
+	     if parameter foo is NULL or unset, if it has embedded spaces
+	     (i.e. IFS characters), or if it is a unary operator like ! or
+	     -n.  Use tests like if [ "X$foo" = Xbar ] instead.
+
+     time [-p] [pipeline]
+	     If a pipeline is given, the times used to execute the pipeline
+	     are reported.  If no pipeline is given, then the user and system
+	     time used by the shell itself, and all the commands it has run
+	     since it was started, are reported.  The times reported are the
+	     real time (elapsed time from start to finish), the user CPU time
+	     (time spent running in user mode), and the system CPU time (time
+	     spent running in kernel mode).  Times are reported to standard
+	     error; the format of the output is:
+
+		   0m0.00s real	    0m0.00s user     0m0.00s system
+
+	     If the -p option is given the output is slightly longer:
+
+		   real	    0.00
+		   user	    0.00
+		   sys	    0.00
+
+	     It is an error to specify the -p option unless pipeline is a
+	     simple command.
+
+	     Simple redirections of standard error do not affect the output of
+	     the time command:
+
+		   $ time sleep 1 2> afile
+		   $ { time sleep 1; } 2> afile
+
+	     Times for the first command do not go to afile, but those of
+	     the second command do.
+
+     times   Print the accumulated user and system times used both by the
+	     shell and by processes that the shell started which have exited.
+	     The format of the output is:
+
+		   0m0.00s 0m0.00s
+		   0m0.00s 0m0.00s
+
+     trap [handler signal ...]
+	     Sets a trap handler that is to be executed when any of the
+	     specified signals are received.  handler is either a NULL string,
+	     indicating the signals are to be ignored, a minus sign (-),
+	     indicating that the default action is to be taken for the signals
+	     (see signal(3)), or a string containing shell commands to be
+	     evaluated and executed at the first opportunity (i.e. when the
+	     current command completes, or before printing the next PS1
+	     prompt) after receipt of one of the signals.  signal is the name
+	     of a signal (e.g. PIPE or ALRM) or the number of the signal (see
+	     the kill -l command above).
+
+	     There are two special signals: EXIT (also known as 0), which is
+	     executed when the shell is about to exit, and ERR, which is
+	     executed after an error occurs (an error is something that would
+	     cause the shell to exit if the -e or errexit option were set -
+	     see the set command above).  EXIT handlers are executed in the
+	     environment of the last executed command.	Note that for non-
+	     interactive shells, the trap handler cannot be changed for
+	     signals that were ignored when the shell started.
+
+	     With no arguments, trap lists, as a series of trap commands, the
+	     current state of the traps that have been set since the shell
+	     started.  Note that the output of trap cannot be usefully piped
+	     to another process (an artifact of the fact that traps are
+	     cleared when subprocesses are created).
+
+	     The original Korn shell's DEBUG trap and the handling of ERR and
+	     EXIT traps in functions are not yet implemented.
+
+     true    A command that exits with a zero value.
+
+     type    Short form of command -V (see above).
+
+     typeset [[+-lprtUux] [-L[n]] [-R[n]] [-Z[n]] [-i[n]] | -f [-tux]] [name
+	     [=value] ...]
+	     Display or set parameter attributes.  With no name arguments,
+	     parameter attributes are displayed; if no options are used, the
+	     current attributes of all parameters are printed as typeset
+	     commands; if an option is given (or - with no option letter),
+	     all parameters and their values with the specified attributes are
+	     printed; if options are introduced with +, parameter values are
+	     not printed.
+
+	     If name arguments are given, the attributes of the named
+	     parameters are set (-) or cleared (+).  Values for parameters may
+	     optionally be specified.  If typeset is used inside a function,
+	     any newly created parameters are local to the function.
+
+	     When -f is used, typeset operates on the attributes of functions.
+	     As with parameters, if no name arguments are given, functions are
+	     listed with their values (i.e. definitions) unless options are
+	     introduced with +, in which case only the function names are
+	     reported.
+
+	     -f	     Function mode.  Display or set functions and their
+		     attributes, instead of parameters.
+
+	     -i[n]   Integer attribute.	 n specifies the base to use when
+		     displaying the integer (if not specified, the base given
+		     in the first assignment is used).	Parameters with this
+		     attribute may be assigned values containing arithmetic
+		     expressions.
+
+	     -L[n]   Left justify attribute.  n specifies the field width.  If
+		     n is not specified, the current width of a parameter (or
+		     the width of its first assigned value) is used.  Leading
+		     whitespace (and zeros, if used with the -Z option) is
+		     stripped.	If necessary, values are either truncated or
+		     space padded to fit the field width.
+
+	     -l	     Lower case attribute.  All upper case characters in
+		     values are converted to lower case.  (In the original
+		     Korn shell, this parameter meant long integer when used
+		     with the -i option.)
+
+	     -p	     Print complete typeset commands that can be used to re-
+		     create the attributes (but not the values) of parameters.
+		     This is the default action (option exists for ksh93
+		     compatibility).
+
+	     -R[n]   Right justify attribute.  n specifies the field width.
+		     If n is not specified, the current width of a parameter
+		     (or the width of its first assigned value) is used.
+		     Trailing whitespace is stripped.  If necessary, values
+		     are either stripped of leading characters or space padded
+		     to make them fit the field width.
+
+	     -r	     Read-only attribute.  Parameters with this attribute may
+		     not be assigned to or unset.  Once this attribute is set,
+		     it cannot be turned off.
+
+	     -t	     Tag attribute.  Has no meaning to the shell; provided for
+		     application use.
+
+		     For functions, -t is the trace attribute.	When functions
+		     with the trace attribute are executed, the xtrace (-x)
+		     shell option is temporarily turned on.
+
+	     -U	     Unsigned integer attribute.  Integers are printed as
+		     unsigned values (only useful when combined with the -i
+		     option).  This option is not in the original Korn shell.
+
+	     -u	     Upper case attribute.  All lower case characters in
+		     values are converted to upper case.  (In the original
+		     Korn shell, this parameter meant unsigned integer when
+		     used with the -i option, which meant upper case letters
+		     would never be used for bases greater than 10.  See the
+		     -U option.)
+
+		     For functions, -u is the undefined attribute.  See
+		     Functions above for the implications of this.
+
+	     -x	     Export attribute.	Parameters (or functions) are placed
+		     in the environment of any executed commands.  Exported
+		     functions are not yet implemented.
+
+	     -Z[n]   Zero fill attribute.  If not combined with -L, this is
+		     the same as -R, except zero padding is used instead of
+		     space padding.
+
+     ulimit [-acdfHlmnpSst [value]] ...
+	     Display or set process limits.  If no options are used, the file
+	     size limit (-f) is assumed.  value, if specified, may be either
+	     an arithmetic expression starting with a number or the word
+	     unlimited.	 The limits affect the shell and any processes
+	     created by the shell after a limit is imposed; limits may not be
+	     increased once they are set.
+
+	     -a	    Display all limits; unless -H is used, soft limits are
+		    displayed.
+
+	     -c n   Impose a size limit of n blocks on the size of core dumps.
+
+	     -d n   Impose a size limit of n kilobytes on the size of the data
+		    area.
+
+	     -f n   Impose a size limit of n blocks on files written by the
+		    shell and its child processes (files of any size may be
+		    read).
+
+	     -H	    Set the hard limit only (the default is to set both hard
+		    and soft limits).
+
+	     -l n   Impose a limit of n kilobytes on the amount of locked
+		    (wired) physical memory.
+
+	     -m n   Impose a limit of n kilobytes on the amount of physical
+		    memory used.  This limit is not enforced.
+
+	     -n n   Impose a limit of n file descriptors that can be open at
+		    once.
+
+	     -p n   Impose a limit of n processes that can be run by the user
+		    at any one time.
+
+	     -S	    Set the soft limit only (the default is to set both hard
+		    and soft limits).
+
+	     -s n   Impose a size limit of n kilobytes on the size of the
+		    stack area.
+
+	     -t n   Impose a time limit of n CPU seconds spent in user mode to
+		    be used by each process.
+
+	     As far as ulimit is concerned, a block is 512 bytes.
+
+     umask [-S] [mask]
+	     Display or set the file permission creation mask, or umask (see
+	     umask(2)).	 If the -S option is used, the mask displayed or set
+	     is symbolic; otherwise, it is an octal number.
+
+	     Symbolic masks are like those used by chmod(1).  When used, they
+	     describe what permissions may be made available (as opposed to
+	     octal masks in which a set bit means the corresponding bit is to
+	     be cleared).  For example, ug=rwx,o= sets the mask so files
+	     will not be readable, writable, or executable by others, and is
+	     equivalent (on most systems) to the octal mask 007.
+
+     unalias [-adt] [name ...]
+	     The aliases for the given names are removed.  If the -a option is
+	     used, all aliases are removed.  If the -t or -d options are used,
+	     the indicated operations are carried out on tracked or directory
+	     aliases, respectively.
+
+     unset [-fv] parameter ...
+	     Unset the named parameters (-v, the default) or functions (-f).
+	     The exit status is non-zero if any of the parameters have the
+	     read-only attribute set, zero otherwise.
+
+     wait [job ...]
+	     Wait for the specified job(s) to finish.  The exit status of wait
+	     is that of the last specified job; if the last job is killed by a
+	     signal, the exit status is 128 + the number of the signal (see
+	     kill -l exit-status above); if the last specified job can't be
+	     found (because it never existed, or had already finished), the
+	     exit status of wait is 127.  See Job control below for the format
+	     of job.  wait will return if a signal for which a trap has been
+	     set is received, or if a SIGHUP, SIGINT, or SIGQUIT signal is
+	     received.
+
+	     If no jobs are specified, wait waits for all currently running
+	     jobs (if any) to finish and exits with a zero status.  If job
+	     monitoring is enabled, the completion status of jobs is printed
+	     (this is not the case when jobs are explicitly specified).
+
+     whence [-pv] [name ...]
+	     For each name, the type of command is listed (reserved word,
+	     built-in, alias, function, tracked alias, or executable).	If the
+	     -p option is used, a path search is performed even if name is a
+	     reserved word, alias, etc.	 Without the -v option, whence is
+	     similar to command -v except that whence won't print aliases as
+	     alias commands.  With the -v option, whence is the same as
+	     command -V.  Note that for whence, the -p option does not affect
+	     the search path used, as it does for command.  If the type of one
+	     or more of the names could not be determined, the exit status is
+	     non-zero.
+

@@ -14,8 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
+#include <libgen.h>
 #include <stdio.h>
+#include <string.h>
 
 extern char **environ;
 
@@ -27,11 +28,13 @@ main(int argc, char *argv[]) {
 	for (i = 0; i < argc; ++i)
 		printf("%s\n", argv[i]);
 
-	printf("\nenviron:\n");
-	if (environ != NULL) {
-		char **curenv = environ;
-		while (*curenv != NULL)
-			printf("%s\n", *curenv++);
+	if (!strcmp(basename(argv[0]), "eprintarcv")) {
+		printf("\nenviron:\n");
+		if (environ != NULL) {
+			char **curenv = environ;
+			while (*curenv != NULL)
+				printf("%s\n", *curenv++);
+		}
 	}
 
 	return 0;

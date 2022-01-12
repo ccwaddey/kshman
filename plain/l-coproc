@@ -1,0 +1,35 @@
+   Co-processes
+     A co-process, which is a pipeline created with the |& operator, is an
+     asynchronous process that the shell can both write to (using print -p)
+     and read from (using read -p).  The input and output of the co-process
+     can also be manipulated using >&p and <&p redirections, respectively.
+     Once a co-process has been started, another can't be started until the
+     co-process exits, or until the co-process's input has been redirected
+     using an exec n>&p redirection.  If a co-process's input is redirected in
+     this way, the next co-process to be started will share the output with
+     the first co-process, unless the output of the initial co-process has
+     been redirected using an exec n<&p redirection.
+
+     Some notes concerning co-processes:
+
+       The only way to close the co-process's input (so the co-process reads
+	 an end-of-file) is to redirect the input to a numbered file
+	 descriptor and then close that file descriptor e.g. exec 3>&p; exec
+	 3>&-.
+
+       In order for co-processes to share a common output, the shell must
+	 keep the write portion of the output pipe open.  This means that end-
+	 of-file will not be detected until all co-processes sharing the co-
+	 process's output have exited (when they all exit, the shell closes
+	 its copy of the pipe).	 This can be avoided by redirecting the output
+	 to a numbered file descriptor (as this also causes the shell to close
+	 its copy).  Note that this behaviour is slightly different from the
+	 original Korn shell which closes its copy of the write portion of the
+	 co-process output when the most recently started co-process (instead
+	 of when all sharing co-processes) exits.
+
+       print -p will ignore SIGPIPE signals during writes if the signal is
+	 not being trapped or ignored; the same is true if the co-process
+	 input has been duplicated to another file descriptor and print -un is
+	 used.
+

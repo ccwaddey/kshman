@@ -1,0 +1,266 @@
+   Interactive input line editing
+     The shell supports three modes of reading command lines from a tty(4) in
+     an interactive session, controlled by the emacs, gmacs, and vi options
+     (at most one of these can be set at once).	 The default is emacs.
+     Editing modes can be set explicitly using the set built-in, or implicitly
+     via the EDITOR and VISUAL environment variables.  If none of these
+     options are enabled, the shell simply reads lines using the normal tty(4)
+     driver.  If the emacs or gmacs option is set, the shell allows emacs-like
+     editing of the command; similarly, if the vi option is set, the shell
+     allows vi-like editing of the command.  These modes are described in
+     detail in the following sections.
+
+     In these editing modes, if a line is longer than the screen width (see
+     the COLUMNS parameter), a >, +, or < character is displayed in the
+     last column indicating that there are more characters after, before and
+     after, or before the current position, respectively.  The line is
+     scrolled horizontally as necessary.
+
+   Emacs editing mode
+     When the emacs option is set, interactive input line editing is enabled.
+     Warning: This mode is slightly different from the emacs mode in the
+     original Korn shell.  In this mode, various editing commands (typically
+     bound to one or more control characters) cause immediate actions without
+     waiting for a newline.  Several editing commands are bound to particular
+     control characters when the shell is invoked; these bindings can be
+     changed using the bind command.
+
+     The following is a list of available editing commands.  Each description
+     starts with the name of the command, suffixed with a colon; an [n] (if
+     the command can be prefixed with a count); and any keys the command is
+     bound to by default, written using caret notation e.g. the ASCII ESC
+     character is written as ^[.  ^[A-Z] sequences are not case sensitive.  A
+     count prefix for a command is entered using the sequence ^[n, where n is
+     a sequence of 1 or more digits.  Unless otherwise specified, if a count
+     is omitted, it defaults to 1.
+
+     Note that editing command names are used only with the bind command.
+     Furthermore, many editing commands are useful only on terminals with a
+     visible cursor.  The default bindings were chosen to resemble
+     corresponding Emacs key bindings.	The user's tty(4) characters (e.g.
+     ERASE) are bound to reasonable substitutes and override the default
+     bindings.
+
+     abort: ^C, ^G
+	     Useful as a response to a request for a search-history pattern in
+	     order to abort the search.
+
+     auto-insert: [n]
+	     Simply causes the character to appear as literal input.  Most
+	     ordinary characters are bound to this.
+
+     backward-char: [n] ^B, ^X^D
+	     Moves the cursor backward n characters.
+
+     backward-word: [n] ^[b
+	     Moves the cursor backward to the beginning of the word; words
+	     consist of alphanumerics, underscore (_), and dollar sign ($)
+	     characters.
+
+     beginning-of-history: ^[<
+	     Moves to the beginning of the history.
+
+     beginning-of-line: ^A
+	     Moves the cursor to the beginning of the edited input line.
+
+     capitalize-word: [n] ^[C, ^[c
+	     Uppercase the first character in the next n words, leaving the
+	     cursor past the end of the last word.
+
+     clear-screen: ^L
+	     Clears the screen if the TERM parameter is set and the terminal
+	     supports clearing the screen, then reprints the prompt string and
+	     the current input line.
+
+     comment: ^[#
+	     If the current line does not begin with a comment character, one
+	     is added at the beginning of the line and the line is entered (as
+	     if return had been pressed); otherwise, the existing comment
+	     characters are removed and the cursor is placed at the beginning
+	     of the line.
+
+     complete: ^[^[
+	     Automatically completes as much as is unique of the command name
+	     or the file name containing the cursor.  If the entire remaining
+	     command or file name is unique, a space is printed after its
+	     completion, unless it is a directory name in which case / is
+	     appended.	If there is no command or file name with the current
+	     partial word as its prefix, a bell character is output (usually
+	     causing a beep to be sounded).
+
+	     Custom completions may be configured by creating an array named
+	     complete_command, optionally suffixed with an argument number
+	     to complete only for a single argument.  So defining an array
+	     named complete_kill provides possible completions for any
+	     argument to the kill(1) command, but complete_kill_1 only
+	     completes the first argument.  For example, the following command
+	     makes ksh offer a selection of signal names for the first
+	     argument to kill(1):
+
+		   set -A complete_kill_1 -- -9 -HUP -INFO -KILL -TERM
+
+     complete-command: ^X^[
+	     Automatically completes as much as is unique of the command name
+	     having the partial word up to the cursor as its prefix, as in the
+	     complete command above.
+
+     complete-file: ^[^X
+	     Automatically completes as much as is unique of the file name
+	     having the partial word up to the cursor as its prefix, as in the
+	     complete command described above.
+
+     complete-list: ^I, ^[=
+	     Complete as much as is possible of the current word, and list the
+	     possible completions for it.  If only one completion is possible,
+	     match as in the complete command above.
+
+     delete-char-backward: [n] ERASE, ^?, ^H
+	     Deletes n characters before the cursor.
+
+     delete-char-forward: [n] Delete
+	     Deletes n characters after the cursor.
+
+     delete-word-backward: [n] WERASE, ^[ERASE, ^W, ^[^?, ^[^H, ^[h
+	     Deletes n words before the cursor.
+
+     delete-word-forward: [n] ^[d
+	     Deletes n words after the cursor.
+
+     down-history: [n] ^N, ^XB
+	     Scrolls the history buffer forward n lines (later).  Each input
+	     line originally starts just after the last entry in the history
+	     buffer, so down-history is not useful until either search-history
+	     or up-history has been performed.
+
+     downcase-word: [n] ^[L, ^[l
+	     Lowercases the next n words.
+
+     end-of-history: ^[>
+	     Moves to the end of the history.
+
+     end-of-line: ^E
+	     Moves the cursor to the end of the input line.
+
+     eot: ^_
+	     Acts as an end-of-file; this is useful because edit-mode input
+	     disables normal terminal input canonicalization.
+
+     eot-or-delete: [n] ^D
+	     Acts as eot if alone on a line; otherwise acts as
+	     delete-char-forward.
+
+     error:  Error (ring the bell).
+
+     exchange-point-and-mark: ^X^X
+	     Places the cursor where the mark is and sets the mark to where
+	     the cursor was.
+
+     expand-file: ^[*
+	     Appends a * to the current word and replaces the word with the
+	     result of performing file globbing on the word.  If no files
+	     match the pattern, the bell is rung.
+
+     forward-char: [n] ^F, ^XC
+	     Moves the cursor forward n characters.
+
+     forward-word: [n] ^[f
+	     Moves the cursor forward to the end of the nth word.
+
+     goto-history: [n] ^[g
+	     Goes to history number n.
+
+     kill-line: KILL
+	     Deletes the entire input line.
+
+     kill-to-eol: [n] ^K
+	     Deletes the input from the cursor to the end of the line if n is
+	     not specified; otherwise deletes characters between the cursor
+	     and column n.
+
+     list: ^[?
+	     Prints a sorted, columnated list of command names or file names
+	     (if any) that can complete the partial word containing the
+	     cursor.  Directory names have / appended to them.
+
+     list-command: ^X?
+	     Prints a sorted, columnated list of command names (if any) that
+	     can complete the partial word containing the cursor.
+
+     list-file: ^X^Y
+	     Prints a sorted, columnated list of file names (if any) that can
+	     complete the partial word containing the cursor.  File type
+	     indicators are appended as described under list above.
+
+     newline: ^J, ^M
+	     Causes the current input line to be processed by the shell.  The
+	     current cursor position may be anywhere on the line.
+
+     newline-and-next: ^O
+	     Causes the current input line to be processed by the shell, and
+	     the next line from history becomes the current line.  This is
+	     only useful after an up-history or search-history.
+
+     no-op: QUIT
+	     This does nothing.
+
+     prev-hist-word: [n] ^[., ^[_
+	     The last (nth) word of the previous command is inserted at the
+	     cursor.
+
+     quote: ^^
+	     The following character is taken literally rather than as an
+	     editing command.
+
+     redraw:
+	     Reprints the prompt string and the current input line.
+
+     search-character-backward: [n] ^[^]
+	     Search backward in the current line for the nth occurrence of the
+	     next character typed.
+
+     search-character-forward: [n] ^]
+	     Search forward in the current line for the nth occurrence of the
+	     next character typed.
+
+     search-history: ^R
+	     Enter incremental search mode.  The internal history list is
+	     searched backwards for commands matching the input.  An initial
+	     ^ in the search string anchors the search.	 The abort key will
+	     leave search mode.	 Other commands will be executed after leaving
+	     search mode.  Successive search-history commands continue
+	     searching backward to the next previous occurrence of the
+	     pattern.  The history buffer retains only a finite number of
+	     lines; the oldest are discarded as necessary.
+
+     set-mark-command: ^[space
+	     Set the mark at the cursor position.
+
+     transpose-chars: ^T
+	     If at the end of line, or if the gmacs option is set, this
+	     exchanges the two previous characters; otherwise, it exchanges
+	     the previous and current characters and moves the cursor one
+	     character to the right.
+
+     up-history: [n] ^P, ^XA
+	     Scrolls the history buffer backward n lines (earlier).
+
+     upcase-word: [n] ^[U, ^[u
+	     Uppercase the next n words.
+
+     quote: ^V
+	     Synonym for ^^.
+
+     yank: ^Y
+	     Inserts the most recently killed text string at the current
+	     cursor position.
+
+     yank-pop: ^[y
+	     Immediately after a yank, replaces the inserted text string with
+	     the next previously killed text string.
+
+     The following editing commands lack default bindings but can be used with
+     the bind command:
+
+     kill-region
+	     Deletes the input between the cursor and the mark.
+
