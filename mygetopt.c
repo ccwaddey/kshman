@@ -17,6 +17,7 @@
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 extern char **environ;
 
@@ -28,12 +29,21 @@ main(int argc, char *argv[]) {
 	for (i = 0; i < argc; ++i)
 		printf("%s\n", argv[i]);
 
-	if (!strcmp(basename(argv[0]), "eprintarcv")) {
-		printf("\nenviron:\n");
-		if (environ != NULL) {
-			char **curenv = environ;
-			while (*curenv != NULL)
-				printf("%s\n", *curenv++);
+	int ch;
+	printf("\noptions:\n");
+	while ((ch = getopt(argc, argv, "abc:")) != -1) {
+		switch (ch) {
+		case 'a':
+			printf("got \"a\" option\n");
+			break;
+		case 'b':
+			printf("got \"b\" option\n");
+			break;
+		case 'c':
+			printf("got \"c\" option, argument: %s\n", optarg);
+			break;
+		default:
+			printf("got bad option\n");
 		}
 	}
 
